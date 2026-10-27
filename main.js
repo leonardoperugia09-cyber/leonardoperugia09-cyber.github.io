@@ -64,9 +64,93 @@ const NS = 'http://www.w3.org/2000/svg';
   }
 
   let raf = 0;
-  addEventListener('resize', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(draw); });
+  addEventListener('resize', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { draw(); drawUI(); }); });
   document.fonts.ready.then(draw);
   draw();
+
+  /* Reading the picture: under the pointer, a marker on the chirp and its frequency.
+     Listening: the same chirp as sound, pitched up 4× so laptop speakers can play it,
+     with a playhead sweeping across the picture. */
+  const ui = document.getElementById('sky-ui'), uctx = ui.getContext('2d');
+  const fAt = t => t <= tPeak ? fPeak * Math.pow((tc - tPeak) / (tc - t), 3 / 8) : fPeak;
+  const loudAt = t => t <= tPeak ? Math.pow(fAt(t) / fPeak, 2 / 3) : Math.exp(-(t - tPeak) / 0.045);
+  const yPx = f => ui.clientHeight * (1 - Math.log(f / fMin) / Math.log(fMax / fMin));
+  const msBefore = t => Math.round((tPeak - t) * 260);   // illustrative time scale: ~200 ms of chirp on screen
+  let hoverX = null, playT = null;
+
+  function marker(x, color, text) {
+    const W = ui.clientWidth, t = clamp(x / W, 0, 1), y = yPx(fAt(t));
+    uctx.strokeStyle = color; uctx.globalAlpha = 0.5; uctx.lineWidth = 1;
+    uctx.beginPath(); uctx.moveTo(x, 0); uctx.lineTo(x, ui.clientHeight); uctx.stroke();
+    uctx.globalAlpha = 1; uctx.fillStyle = color;
+    uctx.beginPath(); uctx.arc(x, y, 4.5, 0, Math.PI * 2); uctx.fill();
+    if (!text) return;
+    uctx.font = '500 13px "Public Sans", sans-serif'; uctx.textBaseline = 'middle';
+    const right = x + 14 + uctx.measureText(text).width < W - 16;
+    uctx.textAlign = right ? 'left' : 'right';
+    const tx = right ? x + 12 : x - 12, ty = y - 18;
+    uctx.lineWidth = 5; uctx.strokeStyle = css('--bg'); uctx.strokeText(text, tx, ty);
+    uctx.fillStyle = css('--ink'); uctx.fillText(text, tx, ty);
+  }
+  const readout = t => t <= tPeak
+    ? `${msBefore(t)} ms before the merger, about ${Math.round(fAt(t))} Hz`
+    : `the remnant rings at about ${fPeak} Hz`;
+
+  function drawUI() {
+    const W = ui.clientWidth, H = ui.clientHeight, dpr = devicePixelRatio || 1;
+    ui.width = W * dpr; ui.height = H * dpr; uctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    uctx.clearRect(0, 0, W, H);
+    if (playT !== null) marker(playT * W, css('--signal'), readout(playT));
+    else if (hoverX !== null) marker(hoverX, css('--second'), readout(hoverX / W));
+  }
+
+  const head = ui.parentElement;
+  head.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return;
+    // only over the open picture, never on top of the name, text or button
+    hoverX = e.target === head ? e.clientX - ui.getBoundingClientRect().left : null;
+    requestAnimationFrame(drawUI);
+  });
+  head.addEventListener('pointerleave', () => { hoverX = null; requestAnimationFrame(drawUI); });
+
+  const btn = document.getElementById('listen');
+  const IN = 1.8, RING = 0.7, PITCH = 4;   // seconds of inspiral and of ringing
+  let audio = null, osc = null, rafPlay = 0;
+  const tAtAudio = s => s < IN ? s / IN * tPeak : tPeak + (s - IN) / RING * (1 - tPeak);
+
+  function stop() {
+    if (osc) { try { osc.stop(); } catch (e) {} osc = null; }
+    cancelAnimationFrame(rafPlay); playT = null;
+    btn.setAttribute('aria-pressed', 'false'); btn.lastElementChild.textContent = 'Listen to a merger';
+    drawUI();
+  }
+  btn.setAttribute('aria-pressed', 'false');
+  btn.addEventListener('click', () => {
+    if (osc) return stop();
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    audio.resume();
+    const t0 = audio.currentTime + 0.05, gain = audio.createGain();
+    osc = audio.createOscillator(); osc.type = 'sine';
+    osc.connect(gain).connect(audio.destination);
+    gain.gain.setValueAtTime(0, t0);
+    for (let i = 0; i <= 160; i++) {
+      const s = i / 160 * (IN + RING), t = tAtAudio(s);
+      osc.frequency.linearRampToValueAtTime(fAt(Math.min(t, tPeak)) * PITCH, t0 + s);
+      gain.gain.linearRampToValueAtTime(0.16 * loudAt(t), t0 + s);
+    }
+    gain.gain.linearRampToValueAtTime(0, t0 + IN + RING + 0.05);
+    osc.start(t0); osc.stop(t0 + IN + RING + 0.1);
+    const mine = osc;
+    osc.onended = () => { if (osc === mine) stop(); };
+    btn.setAttribute('aria-pressed', 'true'); btn.lastElementChild.textContent = 'Stop';
+    const tick = () => {
+      const s = audio.currentTime - t0;
+      playT = s < 0 ? 0 : tAtAudio(Math.min(s, IN + RING));
+      drawUI();
+      if (osc === mine) rafPlay = requestAnimationFrame(tick);
+    };
+    tick();
+  });
 })();
 
 /* Hero: h(t) = e^{-t/τ220} cos(2π f220 t) + a e^{-t/τ221} cos(2π f221 t + φ)
@@ -273,7 +357,16 @@ const NS = 'http://www.w3.org/2000/svg';
     const top = svg.getBoundingClientRect().top;
     const y = reduce ? H : clamp(innerHeight * 0.6 - top, 0, H);
     clipRect.setAttribute('height', y);
-    dots.forEach(p => p.node.setAttribute('opacity', p.y <= y + 2 ? 1 : 0.3));
+    dots.forEach(p => {
+      const on = p.y <= y + 2;
+      p.node.setAttribute('opacity', on ? 1 : 0.3);
+      // the signal arriving at an entry: one ripple, only when it is reached while scrolling
+      if (on && p.was === false && !reduce) {
+        const r = el('circle', { cx: p.x, cy: p.y, r: 6, class: p.open ? 'ripple open' : 'ripple' });
+        r.addEventListener('animationend', () => r.remove());
+      }
+      p.was = on;
+    });
     const show = !reduce && y > 0 && y < H;
     head.style.display = halo.style.display = show ? '' : 'none';
     if (show) {

@@ -38,8 +38,16 @@
   <section class="wrap hero" aria-labelledby="name">
     <div class="hero-head">
       <canvas id="sky" aria-hidden="true"></canvas>
+      <canvas id="sky-ui" aria-hidden="true"></canvas>
       <h1 id="name">Leonardo<br>Perugia</h1>
       <p class="lede">I learn physics and mathematics by building things that test them. Most recently: a simulator for the second note of a ringing black hole.</p>
+      <p class="listen">
+        <button type="button" id="listen" aria-describedby="listen-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+          <span>Listen to a merger</span>
+        </button>
+        <span id="listen-note">Pitched up so you can hear it.<span class="fine-only"> Move across the picture to read its frequency.</span></span>
+      </p>
     </div>
     <figure class="plot">
       <canvas id="ring" role="img" aria-label="A ringing black hole: the full signal, and dashed underneath it a second note that fades about three times faster."></canvas>
