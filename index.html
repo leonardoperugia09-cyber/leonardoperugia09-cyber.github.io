@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0B1630">
+<title>Leonardo Perugia</title>
+<meta name="description" content="Leonardo Perugia: a student learning physics and mathematics by building things that test them. Projects, writing and a timeline.">
+<script>
+  // Intro plays once per visit, never with reduced motion; without JS the page is simply visible.
+  try {
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches && !sessionStorage.getItem('intro')) {
+      document.documentElement.classList.add('intro');
+      sessionStorage.setItem('intro', '1');
+    }
+  } catch (e) {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="wrap top">
+  <a class="mark" href="#">Leonardo Perugia</a>
+  <nav aria-label="Main">
+    <a href="#work">Work</a>
+    <a href="#timeline">Timeline</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
+  </nav>
+</header>
+
+<main id="main">
+
+  <section class="wrap hero" aria-labelledby="name">
+    <h1 id="name">Leonardo<br>Perugia</h1>
+    <p class="lede">I learn physics and mathematics by building things that test them. Most recently: a simulator for the second note of a ringing black hole.</p>
+    <figure class="plot">
+      <canvas id="ring" role="img" aria-label="A ringing black hole: the full signal, and dashed underneath it a second note that fades about three times faster."></canvas>
+      <figcaption>
+        <span>
+          <span class="hint"><span class="fine">Pull the signal up or down and let go to ring it.</span><span class="touch">Tap the signal to ring it.</span></span>
+          <span id="ring-cap" aria-live="polite">After two black holes merge, the new one rings like a struck bell. Its main note lasts; a second note (dashed) fades about three times faster and is much harder to detect. Physicists call them the 220 and 221 modes.</span>
+        </span>
+        <span class="plot-actions">
+          <button type="button" id="restrike">Ring it again</button>
+          <button type="button" id="noise" aria-pressed="false">Add detector noise</button>
+        </span>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="wrap work" id="work" aria-labelledby="work-h">
+    <h2 id="work-h">Selected work</h2>
+    <div class="projects">
+      <article class="proj lead">
+        <img class="shot" src="assets/overtone-explorer.png" alt="Overtone Explorer: sliders for the black hole and the signal next to a plot of simulated noisy ringdown data with one-mode and two-mode fits" width="1320" height="743" loading="lazy">
+        <p class="k">Interactive tool, 2026. Built alone.</p>
+        <h3>Overtone Explorer</h3>
+        <p>Fit one- and two-mode models to simulated noisy ringdowns, and see when a black hole’s overtone becomes detectable and what ignoring it does to the fit.</p>
+        <a href="https://leonardoperugia09-cyber.github.io/overtone-explorer/">Open the tool</a>
+      </article>
+      <article class="proj">
+        <div class="shot cover" aria-hidden="true"><p>If someone strikes a bell, it rings.</p><p>Black holes ring too.</p></div>
+        <p class="k">Article, 4&nbsp;Oct&nbsp;2026. 12&nbsp;min read.</p>
+        <h3>Listening Through the Noise</h3>
+        <p>How four kinds of noise limit what we can learn from a ringing black hole, and why the next detectors are heading to space.</p>
+        <a href="https://medium.com/@leonardo.perugia09/listening-through-the-noise-b33e21d0c97a">Read the article</a>
+      </article>
+      <article class="proj">
+        <img class="shot" src="assets/hsk-platform-screen.png" alt="HSK Platform home screen: one card per HSK level from 1 to 6 with word and character counts" width="1200" height="675" loading="lazy">
+        <p class="k">Web app, 2026. Built alone.</p>
+        <h3>HSK Platform</h3>
+        <p>I couldn’t find a Chinese-learning app that suited how I study, so I built one: HSK 1–6, spaced repetition, mock exams and an exam-date planner.</p>
+        <a href="https://leonardoperugia09-cyber.github.io/hsk-platform/">Open the app</a>
+      </article>
+    </div>
+  </section>
+
+  <section class="wrap tl" id="timeline" aria-labelledby="tl-h">
+    <div class="tl-head">
+      <h2 id="tl-h">Timeline</h2>
+      <p class="legend"><span class="dot"></span> finished <span class="dot open"></span> ongoing</p>
+    </div>
+    <div class="tl-body">
+      <svg class="tl-svg" id="tlsvg" aria-hidden="true"></svg>
+      <ol id="tl-list">
+        <!-- Held back until details exist: Harvard Crimson Global Case Competition, NASA Space Apps Challenge -->
+        <li class="ongoing">
+          <p class="when">Sep 2026 – Jan 2027 <span class="st">Ongoing</span></p>
+          <h3>A semester at Shanghai No.&nbsp;2 High School</h3>
+          <p>School in another country and another system, while keeping my own projects going.</p>
+          <!-- Photo strip comes back when photos exist: see drafts/index-with-placeholders.html -->
+        </li>
+        <li class="ongoing">
+          <p class="when">Sep 2026 – now <span class="st">Ongoing</span></p>
+          <h3>TKS (The Knowledge Society), Innovator</h3>
+          <p>A ten-month innovation programme. I wrote the article and built Overtone Explorer here; now on my Focus Project.</p>
+        </li>
+        <li>
+          <p class="when">Jul 2026</p>
+          <h3>Imperial College London, Global Summer School in Physics</h3>
+          <p>Pendulum research in a team of eight. Our product, Tempy, reached the Enterprise Challenge final. I won the talent show.</p>
+          <details>
+            <summary>More</summary>
+            <p>Oscillations, experiments and Python simulations. Our three experiments tested whether mass affects a pendulum’s period, measured <i>g</i> two independent ways, and found the damping coefficient from video analysis. Tempy is an intelligent thermal necklace.</p>
+          </details>
+        </li>
+        <li>
+          <p class="when">Jun 2026 and Aug–Sep 2025</p>
+          <h3>Guest Services Intern, McArthurGlen Castel Romano</h3>
+          <!-- TODO: one line on what you did -->
+        </li>
+        <li>
+          <p class="when">2025–26 school year</p>
+          <h3>Volunteer, Mensa pasti caldi</h3>
+          <!-- TODO: one line on what you did -->
+        </li>
+        <li>
+          <p class="when">Jul 2025</p>
+          <h3>Immerse Education, Mathematics, Cambridge</h3>
+          <p>Two weeks of university-style maths. My project was on fluid dynamics.</p>
+          <blockquote>“A rare combination of speed and insight.” <cite>Immerse tutor, University of Oxford</cite></blockquote>
+          <details>
+            <summary>More</summary>
+            <p>Logic, proof and group theory in the first week; dynamics, chaos and Hamiltonian mechanics in the second.</p>
+          </details>
+        </li>
+        <li>
+          <p class="when">2024 – Feb 2025</p>
+          <h3>Italian Mathematical Olympiad</h3>
+          <p>1st in my school at the Giochi di Archimede, qualifying for the Rome district round (Gara di Febbraio).</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="wrap about" id="about" aria-labelledby="about-h">
+    <h2 id="about-h">About</h2>
+    <div class="about-grid">
+      <div class="about-text">
+        <p>I’m Leonardo, a student from Rome, currently spending a semester in Shanghai. I like problems I can check: write down the equation, build the simulator, see whether the numbers hold up.</p>
+        <p>Two rules I work by: I learn by doing, and I finish what I start.</p>
+        <h3>Outside physics</h3>
+        <p>I’ve played guitar for six years and performed in two concerts.</p>
+      </div>
+      <dl class="facts">
+        <dt>Languages</dt><dd>Italian, English (C1), Chinese (HSK 4; HSK 5 results pending)</dd>
+        <dt>Interests</dt><dd>Gravitational waves, mathematics, space technology, building useful tools, music</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="wrap contact" id="contact" aria-labelledby="contact-h">
+    <h2 id="contact-h">Get in touch</h2>
+    <p class="contact-lede">I’m always happy to talk about physics, maths, projects or programmes.</p>
+    <!-- Email, CV, LinkedIn and Instagram come back when the real links exist: see drafts/index-with-placeholders.html -->
+    <ul class="links">
+      <li><a href="https://github.com/leonardoperugia09-cyber">GitHub</a></li>
+      <li><a href="https://medium.com/@leonardo.perugia09">Medium</a></li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="wrap foot">
+  <p>© 2026 Leonardo Perugia. The ringdown at the top uses the 220 and 221 mode frequencies and damping times from Overtone Explorer’s default settings.</p>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
