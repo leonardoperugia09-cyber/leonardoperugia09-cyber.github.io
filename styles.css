@@ -32,7 +32,7 @@ a:hover { color: var(--accent); text-decoration-thickness: 2px; }
 h1, h2, h3 { font-family: var(--serif); font-weight: 400; text-wrap: balance; }
 p, li, dd, figcaption { text-wrap: pretty; }
 ::selection { background: var(--signal); color: var(--bg); }
-h2 { font: 850 clamp(2.6rem, 8.5vw, 6.25rem)/0.9 var(--display); font-stretch: 125%; text-transform: uppercase; letter-spacing: -0.03em; margin: 0 0 2.5rem; }
+h2 { font: 850 clamp(2.1rem, 8.5vw, 6.25rem)/0.9 var(--display); font-stretch: 125%; text-transform: uppercase; letter-spacing: -0.03em; margin: 0 0 2.5rem; }
 h3 { font-size: var(--step-2); font-weight: 500; line-height: 1.25; }
 
 .wrap { width: min(1120px, 100% - 32px); margin-inline: auto; }
@@ -275,5 +275,5 @@ h3 { font-size: var(--step-2); font-weight: 500; line-height: 1.25; }
 }
 
 @media (max-width: 360px) {
-  .top nav a { padding-inline: 5px; }
+  .top nav a { padding-inline: 4px; }
 }
