@@ -574,8 +574,6 @@ if (!reduce && 'IntersectionObserver' in window) {
   nums.forEach(n => { n.textContent = '0'; io.observe(n); });
 })();
 
-/* The floating "Scroll" pill fades away once the visitor starts scrolling. */
-addEventListener('scroll', () => document.body.classList.toggle('scrolled', scrollY > 80), { passive: true });
 
 /* Film grain: one small tile of random noise, drawn once and repeated over the page. */
 (() => {
