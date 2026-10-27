@@ -467,19 +467,84 @@ document.querySelectorAll('[data-obj]').forEach(obj => {
   sig.addEventListener('animationend', e => { if (e.target === sig) sig.remove(); });
 })();
 
-/* Section titles: the letters settle into place the first time each title scrolls into view. */
+/* Section titles: scrambled characters that decode, left to right, the first time a title scrolls into view. */
 if (!reduce && 'IntersectionObserver' in window) {
+  const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const decode = h => {
+    const text = h.dataset.text, start = performance.now(), per = 45, settle = 380;
+    const step = now => {
+      const t = now - start;
+      let out = '', done = true;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ch === ' ' || t > settle + i * per) out += ch;
+        else { out += GLYPHS[(Math.random() * GLYPHS.length) | 0]; done = false; }
+      }
+      h.firstChild.textContent = out;
+      if (!done) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
   const io = new IntersectionObserver(entries => entries.forEach(en => {
-    if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
-  }), { threshold: 0.6 });
-  document.querySelectorAll('main h2').forEach(h => {
-    const text = h.textContent;
-    let i = 0;
-    h.setAttribute('aria-label', text);
-    h.innerHTML = text.split(' ').map(w =>
-      `<span class="word" aria-hidden="true">${[...w].map(ch => `<span class="ch" style="--i:${i++}">${ch}</span>`).join('')}</span>`
-    ).join(' ');
-    h.classList.add('split');
+    if (en.isIntersecting) { decode(en.target); io.unobserve(en.target); }
+  }), { threshold: 0.5 });
+  document.querySelectorAll('[data-scramble]').forEach(h => {
+    h.dataset.text = h.textContent.toUpperCase();
+    h.setAttribute('aria-label', h.textContent);
+    h.innerHTML = `<span aria-hidden="true">${h.dataset.text}</span>`;
     io.observe(h);
   });
 }
+
+/* Marquee: two bands drifting in opposite directions; scrolling speeds them up. */
+(() => {
+  const rows = [...document.querySelectorAll('.mq-row')];
+  if (!rows.length || reduce) return;
+  const bands = rows.map((row, k) => {
+    const track = row.querySelector('.mq-track');
+    track.innerHTML += track.innerHTML;                 // two copies so the loop is seamless
+    return { track, x: 0, dir: k % 2 ? 1 : -1, w: 0 };
+  });
+  const measure = () => bands.forEach(b => { b.w = b.track.scrollWidth / 2; });
+  let last = performance.now(), lastY = scrollY, boost = 0, on = true;
+  const tick = now => {
+    const dt = Math.min(64, now - last); last = now;
+    boost = boost * 0.92 + Math.abs(scrollY - lastY) * 0.06; lastY = scrollY;
+    for (const b of bands) {
+      b.x += b.dir * (0.04 + boost * 0.02) * dt;
+      if (b.x <= -b.w) b.x += b.w;
+      if (b.x > 0) b.x -= b.w;
+      b.track.style.transform = `translate3d(${b.x}px, 0, 0)`;
+    }
+    if (on) requestAnimationFrame(tick);
+  };
+  new IntersectionObserver(([en]) => {
+    const was = on; on = en.isIntersecting;
+    if (on && !was) { last = performance.now(); requestAnimationFrame(tick); }
+  }).observe(rows[0].parentElement);
+  document.fonts.ready.then(measure); addEventListener('resize', measure); measure();
+  bands[1].x = -bands[1].w / 2;
+  requestAnimationFrame(tick);
+})();
+
+/* "In numbers": each figure counts up once when it comes into view. */
+(() => {
+  const nums = document.querySelectorAll('[data-count]');
+  if (!nums.length || reduce || !('IntersectionObserver' in window)) return;
+  const fmt = new Intl.NumberFormat('en-GB');
+  const io = new IntersectionObserver(entries => entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    io.unobserve(en.target);
+    const el = en.target, end = +el.dataset.count, start = performance.now(), dur = 1400;
+    const step = now => {
+      const p = clamp((now - start) / dur, 0, 1), e = 1 - Math.pow(1 - p, 4);
+      el.textContent = fmt.format(Math.round(end * e));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }), { threshold: 0.8 });
+  nums.forEach(n => { n.textContent = '0'; io.observe(n); });
+})();
+
+/* The floating "Scroll" pill fades away once the visitor starts scrolling. */
+addEventListener('scroll', () => document.body.classList.toggle('scrolled', scrollY > 80), { passive: true });
