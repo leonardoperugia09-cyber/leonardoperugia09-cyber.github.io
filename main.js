@@ -540,7 +540,7 @@ if (!reduce && 'IntersectionObserver' in window) {
     const dt = Math.min(64, now - last); last = now;
     boost = boost * 0.92 + Math.abs(scrollY - lastY) * 0.06; lastY = scrollY;
     for (const b of bands) {
-      b.x += b.dir * (0.04 + boost * 0.02) * dt;
+      b.x += b.dir * (0.02 + boost * 0.02) * dt;   // a slow drift, faster while you scroll
       if (b.x <= -b.w) b.x += b.w;
       if (b.x > 0) b.x -= b.w;
       b.track.style.transform = `translate3d(${b.x}px, 0, 0)`;

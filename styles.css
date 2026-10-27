@@ -99,8 +99,8 @@ h3 { font-size: var(--step-2); font-weight: 500; line-height: 1.25; }
 
 /* who I am */
 .about { padding-block: 104px 96px; }
-.statement { margin: 0; max-width: 24em; font: 800 clamp(1.6rem, 3.6vw, 2.75rem)/1.12 var(--display); font-stretch: 110%; text-transform: uppercase; letter-spacing: -0.02em; }
-.statement em { font: italic 400 1.08em/1 var(--serif); text-transform: none; letter-spacing: 0; color: var(--signal); }
+.statement { margin: 0; max-width: 30em; font: 400 clamp(1.5rem, 2.8vw, 2.2rem)/1.32 var(--serif); letter-spacing: -0.01em; }
+.statement em { font-style: italic; color: var(--signal); }
 .numbers-h { margin: 88px 0 20px; font: 700 0.875rem/1 var(--sans); color: var(--muted); }
 .numbers { margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; border-top: 1px solid var(--rule); padding-top: 28px; }
 .numbers div { display: flex; flex-direction: column; gap: 8px; }
