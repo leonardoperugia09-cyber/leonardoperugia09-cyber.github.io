@@ -265,12 +265,17 @@ const spacetime = (() => {
   const c = document.getElementById('spacetime');
   if (!c) return { wave() {} };
   const ctx = c.getContext('2d');
-  const NX = 30, NY = 20, SX = 1.7, SY = 1.1, P0 = 0.98, D = 3.4, YAW0 = -0.18;
+  const NX = 44, NY = 30, SX = 1.7, SY = 1.1, P0 = 0.98, D = 3.4, YAW0 = -0.18;
   const bh = { x: 0.25, y: 0.05 };
-  const L = (() => { const v = [-0.45, -0.55, 0.7], n = Math.hypot(...v); return v.map(a => a / n); })();
+  const unit = v => { const n = Math.hypot(...v); return v.map(a => a / n); };
+  const L = unit([-0.45, -0.55, 0.7]), HV = unit([-0.45, -1.1, 1.53]);   // light, and the half-vector towards the viewer
+  // a fixed field of stars behind the sheet; it drifts slightly as the sheet leans
+  let seed = 3;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const STARS = Array.from({ length: 170 }, () => ({ x: rnd(), y: rnd() * 0.75, r: rnd() < 0.08 ? 1.6 : 0.4 + rnd() * 0.8, a: 0.25 + rnd() * 0.6 }));
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-  const BASE = [26, 42, 92];
-  let DEEP, WAVE, waves = [], yaw = YAW0, pitch = 0, tyaw = YAW0, tpitch = 0;
+  const BASE = [24, 28, 54];
+  let DEEP, WAVE, CREST2, waves = [], yaw = YAW0, pitch = 0, tyaw = YAW0, tpitch = 0;
   let raf = 0, visible = true, drag = null, W = 0, H = 0, scale = 1;
 
   function field(x, y, now) {
@@ -305,39 +310,62 @@ const spacetime = (() => {
     tris.sort((m, n) => n.depth - m.depth);
 
     ctx.clearRect(0, 0, W, H);
+    for (const s of STARS) {
+      ctx.globalAlpha = s.a;
+      ctx.fillStyle = '#F2F4FA';
+      ctx.beginPath(); ctx.arc((s.x * W + yaw * 60 + W) % W, s.y * H + pitch * 40, s.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
     ctx.lineWidth = 0.6; ctx.lineJoin = 'round';
     for (const t of tris) {
       const [a, b, d] = t;
-      // flat shading from the face normal gives the faceted, low-poly look
+      // flat shading from the face normal gives the faceted, low-poly look; a specular term adds a sheen
       const ux = b.x - a.x, uy = b.y - a.y, uz = b.z - a.z, vx = d.x - a.x, vy = d.y - a.y, vz = d.z - a.z;
       let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
       if (nz < 0) { nx = -nx; ny = -ny; nz = -nz; }
-      const lit = 0.38 + 0.8 * Math.max(0, (nx * L[0] + ny * L[1] + nz * L[2]) / (Math.hypot(nx, ny, nz) || 1));
-      const deep = clamp(-(a.z + b.z + d.z) / 3 / 0.9, 0, 1), crest = clamp(Math.abs(a.w + b.w + d.w) / 3 * 5, 0, 1);
+      const nl = Math.hypot(nx, ny, nz) || 1;
+      const lit = 0.34 + 0.85 * Math.max(0, (nx * L[0] + ny * L[1] + nz * L[2]) / nl);
+      const spec = Math.pow(Math.max(0, (nx * HV[0] + ny * HV[1] + nz * HV[2]) / nl), 28) * 120;
+      const deep = clamp(-(a.z + b.z + d.z) / 3 / 0.9, 0, 1), wv = (a.w + b.w + d.w) / 3, crest = clamp(Math.abs(wv) * 5, 0, 1);
+      const tint = wv >= 0 ? WAVE : CREST2;   // wave crests glow mint, troughs glow magenta
       const col = BASE.map((v, k) => {
         v += (DEEP[k] - v) * deep * deep;
-        v += (WAVE[k] - v) * crest * 0.85;
-        return Math.round(clamp(v * lit, 0, 255));
+        v += (tint[k] - v) * crest * 0.85;
+        return Math.round(clamp(v * lit + spec, 0, 255));
       });
       ctx.globalAlpha = 1 - clamp((t.depth - 0.35) / 1.3, 0, 0.75);   // the far side fades into the night
       ctx.beginPath(); ctx.moveTo(a.p[0], a.p[1]); ctx.lineTo(b.p[0], b.p[1]); ctx.lineTo(d.p[0], d.p[1]); ctx.closePath();
       ctx.fillStyle = ctx.strokeStyle = `rgb(${col})`; ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = 'rgba(190, 205, 235, 0.09)'; ctx.stroke();
+      ctx.strokeStyle = 'rgba(200, 210, 240, 0.08)'; ctx.stroke();
     }
     ctx.globalAlpha = 1;
 
-    // the black hole: a dark disc with its glowing photon ring
+    // the black hole: a glow on the sheet, a glowing accretion disk, and the dark shadow in front of its back half
     const [bx, by] = project(bh.x, bh.y, field(bh.x, bh.y, now)[0]);
     const r = clamp(scale * 0.075, 8, 18);
-    ctx.save();
-    ctx.shadowColor = 'rgba(253, 224, 71, 0.85)'; ctx.shadowBlur = 22;
-    ctx.strokeStyle = css('--signal'); ctx.lineWidth = 2.2;
-    ctx.beginPath(); ctx.ellipse(bx, by, r * 1.7, r * 0.75, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle = '#03060F'; ctx.beginPath(); ctx.arc(bx, by - r * 0.15, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(253, 224, 71, 0.5)'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.strokeStyle = css('--signal'); ctx.lineWidth = 2.2;
-    ctx.beginPath(); ctx.ellipse(bx, by, r * 1.7, r * 0.75, 0, Math.PI * 0.05, Math.PI * 0.95); ctx.stroke();
+    const halo = ctx.createRadialGradient(bx, by, r, bx, by, r * 6);
+    halo.addColorStop(0, 'rgba(139, 124, 255, 0.35)'); halo.addColorStop(1, 'rgba(139, 124, 255, 0)');
+    ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(bx, by, r * 6, 0, Math.PI * 2); ctx.fill();
+
+    const disk = (from, to) => {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const g = ctx.createConicGradient ? ctx.createConicGradient(0, bx, by) : null;
+      if (g) {
+        g.addColorStop(0, css('--signal')); g.addColorStop(0.33, css('--second'));
+        g.addColorStop(0.66, css('--accent')); g.addColorStop(1, css('--signal'));
+      }
+      for (const [w, a, blur] of [[r * 0.9, 0.35, 24], [r * 0.35, 0.95, 10]]) {
+        ctx.globalAlpha = a; ctx.shadowColor = css('--signal'); ctx.shadowBlur = blur;
+        ctx.strokeStyle = g || css('--signal'); ctx.lineWidth = w;
+        ctx.beginPath(); ctx.ellipse(bx, by, r * 2.1, r * 0.8, 0, from, to); ctx.stroke();
+      }
+      ctx.restore();
+    };
+    disk(Math.PI, Math.PI * 2);                                  // back half, behind the hole
+    ctx.fillStyle = '#010104'; ctx.beginPath(); ctx.arc(bx, by - r * 0.2, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(60, 240, 197, 0.7)'; ctx.lineWidth = 1.2; ctx.stroke();   // photon ring
+    disk(0, Math.PI);                                            // front half, in front of the hole
     return [bx, by];
   }
 
@@ -357,7 +385,7 @@ const spacetime = (() => {
     const dpr = devicePixelRatio || 1;
     c.width = W * dpr; c.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     scale = Math.min(W / (2 * SX) * 0.86, H / 1.75);
-    DEEP = rgb(css('--accent')); WAVE = rgb(css('--second'));
+    DEEP = rgb(css('--accent')); WAVE = rgb(css('--signal')); CREST2 = rgb(css('--second'));
     kick();
   }
 
@@ -548,3 +576,38 @@ if (!reduce && 'IntersectionObserver' in window) {
 
 /* The floating "Scroll" pill fades away once the visitor starts scrolling. */
 addEventListener('scroll', () => document.body.classList.toggle('scrolled', scrollY > 80), { passive: true });
+
+/* Film grain: one small tile of random noise, drawn once and repeated over the page. */
+(() => {
+  const n = document.createElement('canvas'); n.width = n.height = 180;
+  const g = n.getContext('2d'), img = g.createImageData(180, 180);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = (Math.random() * 255) | 0;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  document.documentElement.style.setProperty('--grain', `url(${n.toDataURL()})`);
+})();
+
+/* Cursor: a glowing ring that trails the pointer and grows over anything you can press or drag. */
+(() => {
+  const ring = document.querySelector('.cursor');
+  if (!ring || reduce || !matchMedia('(pointer: fine)').matches) return;
+  const HOT = 'a, button, summary, canvas, [data-obj] .obj-inner, .mq-row';
+  let x = -100, y = -100, cx = x, cy = y, raf = 0;
+  const loop = () => {
+    cx += (x - cx) * 0.22; cy += (y - cy) * 0.22;
+    ring.style.transform = `translate3d(${cx}px, ${cy}px, 0)`;
+    raf = Math.abs(x - cx) + Math.abs(y - cy) > 0.3 ? requestAnimationFrame(loop) : 0;
+  };
+  addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;
+    x = e.clientX; y = e.clientY;
+    ring.classList.add('on');
+    ring.classList.toggle('hot', !!e.target.closest?.(HOT));
+    if (!raf) raf = requestAnimationFrame(loop);
+  }, { passive: true });
+  addEventListener('pointerdown', () => ring.classList.add('down'));
+  addEventListener('pointerup', () => ring.classList.remove('down'));
+  document.documentElement.addEventListener('mouseleave', () => ring.classList.remove('on'));
+})();
