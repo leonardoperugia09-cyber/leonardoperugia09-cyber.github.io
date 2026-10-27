@@ -204,6 +204,7 @@ const NS = 'http://www.w3.org/2000/svg';
 
   function update() {
     ticking = false;
+    if (!clipRect) return;   // a scroll can arrive before the first build
     const top = svg.getBoundingClientRect().top;
     const y = reduce ? H : clamp(innerHeight * 0.6 - top, 0, H);
     clipRect.setAttribute('height', y);
