@@ -3,156 +3,6 @@ const css = name => getComputedStyle(document.documentElement).getPropertyValue(
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const NS = 'http://www.w3.org/2000/svg';
 
-/* Behind the name: an illustrative spectrogram of a whole merger.
-   Inspiral: f(t) = f_peak · ((t_c − t_peak) / (t_c − t))^(3/8), loudness ∝ f^(2/3).
-   After the peak the remnant rings at f_peak and fades. Drawn at low resolution
-   and scaled up so the band is soft, with a little detector-like speckle. */
-(() => {
-  const c = document.getElementById('sky'), ctx = c.getContext('2d');
-  const tPeak = 0.78, tc = tPeak + 0.008, fPeak = 270, fMin = 20, fMax = 2400;
-  const stops = [
-    [0.00, [11, 22, 48], 0],
-    [0.25, [167, 139, 250], 0.5],   // violet
-    [0.60, [45, 212, 191], 0.8],    // teal
-    [1.00, [253, 224, 71], 1]       // yellow
-  ];
-  const colour = v => {
-    v = clamp(v, 0, 1);
-    let i = 1; while (i < stops.length - 1 && v > stops[i][0]) i++;
-    const [a, ca, aa] = stops[i - 1], [b, cb, ab] = stops[i], k = (v - a) / (b - a);
-    return [0, 1, 2].map(j => ca[j] + (cb[j] - ca[j]) * k).concat(aa + (ab - aa) * k);
-  };
-
-  function draw() {
-    const W = c.clientWidth, H = c.clientHeight;
-    if (!W) return;
-    const dpr = devicePixelRatio || 1;
-    c.width = W * dpr; c.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const w = 360, h = Math.max(90, Math.round(w * H / W));
-    const off = document.createElement('canvas'); off.width = w; off.height = h;
-    const octx = off.getContext('2d'), img = octx.createImageData(w, h);
-    const yOf = f => h * (1 - Math.log(f / fMin) / Math.log(fMax / fMin));
-    let seed = 11;
-    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-
-    for (let x = 0; x < w; x++) {
-      const t = x / (w - 1);
-      let f, A;
-      if (t <= tPeak) { f = fPeak * Math.pow((tc - tPeak) / (tc - t), 3 / 8); A = Math.pow(f / fPeak, 2 / 3); }
-      else { f = fPeak; A = Math.exp(-(t - tPeak) / 0.045); }
-      const yc = yOf(f), sigma = 1.8 + 2.6 * Math.exp(-Math.abs(t - tPeak) / 0.03);
-      for (let y = 0; y < h; y++) {
-        const d = (y - yc) / sigma;
-        const v = A * (Math.exp(-d * d) + 0.22 * Math.exp(-d * d / 16)) + rand() * 0.07;
-        const [r, g, b, a] = colour(v), p = (y * w + x) * 4;
-        img.data[p] = r; img.data[p + 1] = g; img.data[p + 2] = b; img.data[p + 3] = a * 255 * 0.9;
-      }
-    }
-    octx.putImageData(img, 0, 0);
-    ctx.clearRect(0, 0, W, H);
-    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(off, 0, 0, W, H);
-
-    // the merger: a faint marker where the chirp peaks
-    const xm = tPeak * W, ym = yOf(fPeak) / h * H;
-    ctx.strokeStyle = 'rgba(154, 168, 199, 0.45)'; ctx.lineWidth = 1; ctx.setLineDash([3, 5]);
-    ctx.beginPath(); ctx.moveTo(xm, ym - 70); ctx.lineTo(xm, H - 12); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = css('--muted'); ctx.font = '500 12px "Public Sans", sans-serif';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
-    ctx.fillText('merger', xm + 6, ym - 58);
-  }
-
-  let raf = 0;
-  addEventListener('resize', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { draw(); drawUI(); }); });
-  document.fonts.ready.then(draw);
-  draw();
-
-  /* Reading the picture: under the pointer, a marker on the chirp and its frequency.
-     Listening: the same chirp as sound, pitched up 4× so laptop speakers can play it,
-     with a playhead sweeping across the picture. */
-  const ui = document.getElementById('sky-ui'), uctx = ui.getContext('2d');
-  const fAt = t => t <= tPeak ? fPeak * Math.pow((tc - tPeak) / (tc - t), 3 / 8) : fPeak;
-  const loudAt = t => t <= tPeak ? Math.pow(fAt(t) / fPeak, 2 / 3) : Math.exp(-(t - tPeak) / 0.045);
-  const yPx = f => ui.clientHeight * (1 - Math.log(f / fMin) / Math.log(fMax / fMin));
-  const msBefore = t => Math.round((tPeak - t) * 260);   // illustrative time scale: ~200 ms of chirp on screen
-  let hoverX = null, playT = null;
-
-  function marker(x, color, text) {
-    const W = ui.clientWidth, t = clamp(x / W, 0, 1), y = yPx(fAt(t));
-    uctx.strokeStyle = color; uctx.globalAlpha = 0.5; uctx.lineWidth = 1;
-    uctx.beginPath(); uctx.moveTo(x, 0); uctx.lineTo(x, ui.clientHeight); uctx.stroke();
-    uctx.globalAlpha = 1; uctx.fillStyle = color;
-    uctx.beginPath(); uctx.arc(x, y, 4.5, 0, Math.PI * 2); uctx.fill();
-    if (!text) return;
-    uctx.font = '500 13px "Public Sans", sans-serif'; uctx.textBaseline = 'middle';
-    const right = x + 14 + uctx.measureText(text).width < W - 16;
-    uctx.textAlign = right ? 'left' : 'right';
-    const tx = right ? x + 12 : x - 12, ty = y - 18;
-    uctx.lineWidth = 5; uctx.strokeStyle = css('--bg'); uctx.strokeText(text, tx, ty);
-    uctx.fillStyle = css('--ink'); uctx.fillText(text, tx, ty);
-  }
-  const readout = t => t <= tPeak
-    ? `${msBefore(t)} ms before the merger, about ${Math.round(fAt(t))} Hz`
-    : `the remnant rings at about ${fPeak} Hz`;
-
-  function drawUI() {
-    const W = ui.clientWidth, H = ui.clientHeight, dpr = devicePixelRatio || 1;
-    ui.width = W * dpr; ui.height = H * dpr; uctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    uctx.clearRect(0, 0, W, H);
-    if (playT !== null) marker(playT * W, css('--signal'), readout(playT));
-    else if (hoverX !== null) marker(hoverX, css('--second'), readout(hoverX / W));
-  }
-
-  const head = ui.parentElement;
-  head.addEventListener('pointermove', e => {
-    if (e.pointerType === 'touch') return;
-    // only over the open picture, never on top of the name, text or button
-    hoverX = e.target === head ? e.clientX - ui.getBoundingClientRect().left : null;
-    requestAnimationFrame(drawUI);
-  });
-  head.addEventListener('pointerleave', () => { hoverX = null; requestAnimationFrame(drawUI); });
-
-  const btn = document.getElementById('listen');
-  const IN = 1.8, RING = 0.7, PITCH = 4;   // seconds of inspiral and of ringing
-  let audio = null, osc = null, rafPlay = 0;
-  const tAtAudio = s => s < IN ? s / IN * tPeak : tPeak + (s - IN) / RING * (1 - tPeak);
-
-  function stop() {
-    if (osc) { try { osc.stop(); } catch (e) {} osc = null; }
-    cancelAnimationFrame(rafPlay); playT = null;
-    btn.setAttribute('aria-pressed', 'false'); btn.lastElementChild.textContent = 'Listen to a merger';
-    drawUI();
-  }
-  btn.setAttribute('aria-pressed', 'false');
-  btn.addEventListener('click', () => {
-    if (osc) return stop();
-    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
-    audio.resume();
-    const t0 = audio.currentTime + 0.05, gain = audio.createGain();
-    osc = audio.createOscillator(); osc.type = 'sine';
-    osc.connect(gain).connect(audio.destination);
-    gain.gain.setValueAtTime(0, t0);
-    for (let i = 0; i <= 160; i++) {
-      const s = i / 160 * (IN + RING), t = tAtAudio(s);
-      osc.frequency.linearRampToValueAtTime(fAt(Math.min(t, tPeak)) * PITCH, t0 + s);
-      gain.gain.linearRampToValueAtTime(0.16 * loudAt(t), t0 + s);
-    }
-    gain.gain.linearRampToValueAtTime(0, t0 + IN + RING + 0.05);
-    osc.start(t0); osc.stop(t0 + IN + RING + 0.1);
-    const mine = osc;
-    osc.onended = () => { if (osc === mine) stop(); };
-    btn.setAttribute('aria-pressed', 'true'); btn.lastElementChild.textContent = 'Stop';
-    const tick = () => {
-      const s = audio.currentTime - t0;
-      playT = s < 0 ? 0 : tAtAudio(Math.min(s, IN + RING));
-      drawUI();
-      if (osc === mine) rafPlay = requestAnimationFrame(tick);
-    };
-    tick();
-  });
-})();
-
 /* Hero: h(t) = e^{-t/τ220} cos(2π f220 t) + a e^{-t/τ221} cos(2π f221 t + φ)
    Frequencies and damping times match Overtone Explorer's default "truth" values.
    Pulling the signal sets its loudness; the detector noise stays fixed, so a louder
@@ -407,3 +257,229 @@ document.querySelectorAll('[data-diary]').forEach(diary => {
   diary.closest('details')?.addEventListener('toggle', sync);
   sync();
 });
+
+/* Hero: a low-poly sheet of spacetime with a black hole sitting in a well.
+   Height = the well, −k/√(r² + s²), plus ripples that travel outward and fade like a ringdown.
+   The sheet leans toward the pointer; drag the black hole and let go to send a wave. */
+const spacetime = (() => {
+  const c = document.getElementById('spacetime');
+  if (!c) return { wave() {} };
+  const ctx = c.getContext('2d');
+  const NX = 30, NY = 20, SX = 1.7, SY = 1.1, P0 = 0.98, D = 3.4, YAW0 = -0.18;
+  const bh = { x: 0.25, y: 0.05 };
+  const L = (() => { const v = [-0.45, -0.55, 0.7], n = Math.hypot(...v); return v.map(a => a / n); })();
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const BASE = [26, 42, 92];
+  let DEEP, WAVE, waves = [], yaw = YAW0, pitch = 0, tyaw = YAW0, tpitch = 0;
+  let raf = 0, visible = true, drag = null, W = 0, H = 0, scale = 1;
+
+  function field(x, y, now) {
+    const dx = x - bh.x, dy = y - bh.y;
+    let w = 0;
+    for (const v of waves) {
+      const t = (now - v.t0) / 1000, front = Math.hypot(x - v.x, y - v.y) - 0.85 * t;
+      w += v.A * Math.exp(-t / 1.2) * Math.exp(-front * front / 0.06) * Math.cos(10 * front);
+    }
+    return [-0.2 / Math.sqrt(dx * dx + dy * dy + 0.028) + 0.11 + w, w];
+  }
+  function project(x, y, z) {
+    const p = P0 + pitch, cy = Math.cos(yaw), sy = Math.sin(yaw);
+    const x1 = x * cy - y * sy, y1 = x * sy + y * cy;
+    const depth = y1 * Math.cos(p) - z * Math.sin(p), up = y1 * Math.sin(p) + z * Math.cos(p);
+    const s = D / (D + depth) * scale;
+    return [W / 2 + x1 * s, H * 0.46 - up * s, depth];
+  }
+
+  function draw(now) {
+    const pts = [];
+    for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
+      const x = (i / NX * 2 - 1) * SX, y = (j / NY * 2 - 1) * SY, [z, w] = field(x, y, now);
+      pts.push({ x, y, z, w, p: project(x, y, z) });
+    }
+    const at = (i, j) => pts[j * (NX + 1) + i], tris = [];
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+      const a = at(i, j), b = at(i + 1, j), q = at(i + 1, j + 1), d = at(i, j + 1);
+      tris.push([a, b, q], [a, q, d]);
+    }
+    for (const t of tris) t.depth = (t[0].p[2] + t[1].p[2] + t[2].p[2]) / 3;
+    tris.sort((m, n) => n.depth - m.depth);
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineWidth = 0.6; ctx.lineJoin = 'round';
+    for (const t of tris) {
+      const [a, b, d] = t;
+      // flat shading from the face normal gives the faceted, low-poly look
+      const ux = b.x - a.x, uy = b.y - a.y, uz = b.z - a.z, vx = d.x - a.x, vy = d.y - a.y, vz = d.z - a.z;
+      let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      if (nz < 0) { nx = -nx; ny = -ny; nz = -nz; }
+      const lit = 0.38 + 0.8 * Math.max(0, (nx * L[0] + ny * L[1] + nz * L[2]) / (Math.hypot(nx, ny, nz) || 1));
+      const deep = clamp(-(a.z + b.z + d.z) / 3 / 0.9, 0, 1), crest = clamp(Math.abs(a.w + b.w + d.w) / 3 * 5, 0, 1);
+      const col = BASE.map((v, k) => {
+        v += (DEEP[k] - v) * deep * deep;
+        v += (WAVE[k] - v) * crest * 0.85;
+        return Math.round(clamp(v * lit, 0, 255));
+      });
+      ctx.globalAlpha = 1 - clamp((t.depth - 0.35) / 1.3, 0, 0.75);   // the far side fades into the night
+      ctx.beginPath(); ctx.moveTo(a.p[0], a.p[1]); ctx.lineTo(b.p[0], b.p[1]); ctx.lineTo(d.p[0], d.p[1]); ctx.closePath();
+      ctx.fillStyle = ctx.strokeStyle = `rgb(${col})`; ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(190, 205, 235, 0.09)'; ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // the black hole: a dark disc with its glowing photon ring
+    const [bx, by] = project(bh.x, bh.y, field(bh.x, bh.y, now)[0]);
+    const r = clamp(scale * 0.075, 8, 18);
+    ctx.save();
+    ctx.shadowColor = 'rgba(253, 224, 71, 0.85)'; ctx.shadowBlur = 22;
+    ctx.strokeStyle = css('--signal'); ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.ellipse(bx, by, r * 1.7, r * 0.75, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#03060F'; ctx.beginPath(); ctx.arc(bx, by - r * 0.15, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(253, 224, 71, 0.5)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.strokeStyle = css('--signal'); ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.ellipse(bx, by, r * 1.7, r * 0.75, 0, Math.PI * 0.05, Math.PI * 0.95); ctx.stroke();
+    return [bx, by];
+  }
+
+  function frame(now) {
+    raf = 0;
+    if (reduce) { draw(now); return; }
+    yaw += (tyaw - yaw) * 0.12; pitch += (tpitch - pitch) * 0.12;
+    waves = waves.filter(v => now - v.t0 < 5000);
+    draw(now);
+    const settling = Math.abs(tyaw - yaw) > 0.0008 || Math.abs(tpitch - pitch) > 0.0008;
+    if (visible && (waves.length || settling || drag)) raf = requestAnimationFrame(frame);
+  }
+  const kick = () => { if (!raf) raf = requestAnimationFrame(frame); };
+
+  function size() {
+    W = c.clientWidth; H = c.clientHeight;
+    const dpr = devicePixelRatio || 1;
+    c.width = W * dpr; c.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    scale = Math.min(W / (2 * SX) * 0.86, H / 1.75);
+    DEEP = rgb(css('--accent')); WAVE = rgb(css('--second'));
+    kick();
+  }
+
+  function wave(A) {
+    const now = performance.now();
+    if (reduce) { waves = [{ x: bh.x, y: bh.y, t0: now - 500, A }]; draw(now); return; }
+    waves.push({ x: bh.x, y: bh.y, t0: now, A }); kick();
+  }
+
+  const hero = c.closest('.hero');
+  hero.addEventListener('pointermove', e => {
+    if (reduce || e.pointerType === 'touch') return;
+    const r = c.getBoundingClientRect();
+    tyaw = YAW0 + clamp((e.clientX - (r.left + r.width / 2)) / r.width, -1, 1) * 0.35;
+    tpitch = -clamp((e.clientY - (r.top + r.height / 2)) / r.height, -1, 1) * 0.12;
+    kick();
+  });
+  hero.addEventListener('pointerleave', () => { tyaw = YAW0; tpitch = 0; kick(); });
+
+  c.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') return;          // touch: a tap makes a wave, swipes keep scrolling
+    const r = c.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    const [bx, by] = draw(performance.now());
+    if (Math.hypot(px - bx, py - by) < 46) {
+      drag = { px, py, x0: bh.x, y0: bh.y, moved: 0 };
+      c.setPointerCapture(e.pointerId); c.classList.add('dragging');
+    } else drag = { click: true };
+  });
+  c.addEventListener('pointermove', e => {
+    if (!drag || drag.click) return;
+    const r = c.getBoundingClientRect(), p = P0 + pitch;
+    const x1 = (e.clientX - r.left - drag.px) / scale, y1 = -(e.clientY - r.top - drag.py) / (scale * Math.sin(p));
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
+    bh.x = clamp(drag.x0 + x1 * cy + y1 * sy, -SX + 0.35, SX - 0.35);
+    bh.y = clamp(drag.y0 - x1 * sy + y1 * cy, -SY + 0.3, SY - 0.3);
+    drag.moved = Math.hypot(bh.x - drag.x0, bh.y - drag.y0);
+    kick();
+  });
+  const release = e => {
+    if (e.pointerType === 'touch') { if (e.type === 'pointerup') wave(0.28); return; }
+    if (!drag) return;
+    const d = drag; drag = null; c.classList.remove('dragging');
+    if (e.type === 'pointerup') wave(d.click ? 0.24 : clamp(0.14 + d.moved * 0.5, 0.14, 0.45));
+  };
+  c.addEventListener('pointerup', release);
+  c.addEventListener('pointercancel', release);
+
+  new IntersectionObserver(([en]) => { visible = en.isIntersecting; if (visible) kick(); }).observe(c);
+  addEventListener('resize', size);
+  size();
+  // one ripple to show the sheet is alive: after the signature intro, or straight away
+  setTimeout(() => wave(0.3), document.documentElement.classList.contains('intro') ? 2400 : 500);
+  return { wave };
+})();
+document.getElementById('wave')?.addEventListener('click', () => spacetime.wave(0.3));
+
+/* Project objects: they lean toward the pointer with a soft sheen;
+   drag one sideways (or press it, or the button) to flip it and read the back. */
+document.querySelectorAll('[data-obj]').forEach(obj => {
+  const inner = obj.querySelector('.obj-inner'), front = obj.querySelector('.front'), btn = obj.querySelector('.obj-flip');
+  obj.querySelectorAll('img').forEach(img => { img.draggable = false; });
+  let flipped = false, rx = 0, ry = 0, drag = null;
+  const apply = (extra = 0) => { inner.style.transform = `rotateX(${rx}deg) rotateY(${(flipped ? 180 : 0) + ry + extra}deg)`; };
+  const setFlip = v => {
+    flipped = v; rx = ry = 0;
+    btn.setAttribute('aria-pressed', v); btn.textContent = v ? 'Back to the front' : 'See details';
+    inner.classList.remove('live'); apply();
+  };
+  btn.addEventListener('click', () => setFlip(!flipped));
+
+  inner.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return;
+    if (drag) { drag.dx = e.clientX - drag.x; inner.classList.add('dragging'); apply(clamp(drag.dx * 0.6, -180, 180)); return; }
+    if (reduce) return;
+    const r = inner.getBoundingClientRect(), nx = (e.clientX - r.left) / r.width, ny = (e.clientY - r.top) / r.height;
+    rx = (0.5 - ny) * 9; ry = (nx - 0.5) * 12;
+    front.style.setProperty('--mx', `${nx * 100}%`); front.style.setProperty('--my', `${ny * 100}%`); front.style.setProperty('--sheen', 1);
+    inner.classList.add('live'); apply();
+  });
+  inner.addEventListener('pointerleave', () => {
+    rx = ry = 0; front.style.setProperty('--sheen', 0); inner.classList.remove('live');
+    if (!drag) apply();
+  });
+  inner.addEventListener('pointerdown', e => {
+    if (e.button) return;
+    drag = { x: e.clientX, dx: 0, touch: e.pointerType === 'touch' };
+    if (!drag.touch) inner.setPointerCapture(e.pointerId);
+  });
+  const end = e => {
+    if (!drag) return;
+    const { dx } = drag; drag = null; inner.classList.remove('dragging');
+    if (e.type === 'pointerup' && (Math.abs(dx) > 60 || Math.abs(dx) < 4)) setFlip(!flipped); else apply();
+  };
+  inner.addEventListener('pointerup', end);
+  inner.addEventListener('pointercancel', end);
+});
+
+/* Signature intro: the name is written in one glowing line, then the page appears.
+   Once per visit; any click or key skips it. */
+(() => {
+  const sig = document.getElementById('sig');
+  if (!sig) return;
+  if (!document.documentElement.classList.contains('intro')) { sig.remove(); return; }
+  const skip = () => { if (!sig.isConnected) return; sig.classList.add('done'); setTimeout(() => sig.remove(), 320); };
+  sig.addEventListener('click', skip);
+  addEventListener('keydown', skip, { once: true });
+  sig.addEventListener('animationend', e => { if (e.target === sig) sig.remove(); });
+})();
+
+/* Section titles: the letters settle into place the first time each title scrolls into view. */
+if (!reduce && 'IntersectionObserver' in window) {
+  const io = new IntersectionObserver(entries => entries.forEach(en => {
+    if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+  }), { threshold: 0.6 });
+  document.querySelectorAll('main h2').forEach(h => {
+    const text = h.textContent;
+    let i = 0;
+    h.setAttribute('aria-label', text);
+    h.innerHTML = text.split(' ').map(w =>
+      `<span class="word" aria-hidden="true">${[...w].map(ch => `<span class="ch" style="--i:${i++}">${ch}</span>`).join('')}</span>`
+    ).join(' ');
+    h.classList.add('split');
+    io.observe(h);
+  });
+}

@@ -18,9 +18,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Mrs+Saint+Delafield&display=block&text=LeonardoPerugia%20" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<div class="sig" id="sig" aria-hidden="true">
+  <svg viewBox="0 0 900 240"><text x="450" y="150" text-anchor="middle">Leonardo Perugia</text></svg>
+</div>
 <a class="skip" href="#main">Skip to content</a>
 
 <header class="wrap top">
@@ -36,18 +40,18 @@
 <main id="main">
 
   <section class="wrap hero" aria-labelledby="name">
-    <div class="hero-head">
-      <canvas id="sky" aria-hidden="true"></canvas>
-      <canvas id="sky-ui" aria-hidden="true"></canvas>
-      <h1 id="name">Leonardo<br>Perugia</h1>
-      <p class="lede">I learn physics and mathematics by building things that test them. Most recently: a simulator for the second note of a ringing black hole.</p>
-      <p class="listen">
-        <button type="button" id="listen" aria-describedby="listen-note">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
-          <span>Listen to a merger</span>
-        </button>
-        <span id="listen-note">Pitched up so you can hear it.<span class="fine-only"> Move across the picture to read its frequency.</span></span>
-      </p>
+    <div class="hero-grid">
+      <div class="hero-text">
+        <h1 id="name">Leonardo<br>Perugia</h1>
+        <p class="lede">I learn physics and mathematics by building things that test them. Most recently: a simulator for the second note of a ringing black hole.</p>
+      </div>
+      <figure class="sheet">
+        <canvas id="spacetime" role="img" aria-label="A 3D sheet of spacetime with a black hole sitting in a well. Ripples spread across the sheet like gravitational waves and fade."></canvas>
+        <figcaption>
+          <span><span class="fine">Drag the black hole and let go.</span><span class="touch">Tap the sheet to make a wave.</span></span>
+          <button type="button" id="wave">Make a wave</button>
+        </figcaption>
+      </figure>
     </div>
     <figure class="plot">
       <canvas id="ring" role="img" aria-label="A ringing black hole: the full signal, and dashed underneath it a second note that fades about three times faster."></canvas>
@@ -68,21 +72,58 @@
     <h2 id="work-h">Selected work</h2>
     <div class="projects">
       <article class="proj lead">
-        <img class="shot" src="assets/overtone-explorer.png" alt="Overtone Explorer: sliders for the black hole and the signal next to a plot of simulated noisy ringdown data with one-mode and two-mode fits" width="1320" height="743" loading="lazy">
+        <div class="obj" data-obj>
+          <div class="obj-inner">
+            <div class="obj-face front"><img src="assets/overtone-explorer.png" alt="Overtone Explorer: sliders for the black hole and the signal next to a plot of simulated noisy ringdown data with one-mode and two-mode fits" width="1320" height="743" loading="lazy"></div>
+            <div class="obj-face back">
+              <ul>
+                <li>Built alone during TKS.</li>
+                <li>Runs entirely in your browser: the fits, the detection forecast and a 50-draw noise experiment.</li>
+                <li>Presets modelled on GW150914 and GW250114.</li>
+                <li>Finished, and I can keep improving it.</li>
+              </ul>
+            </div>
+          </div>
+          <button type="button" class="obj-flip" aria-pressed="false">See details</button>
+        </div>
         <p class="k">Interactive tool, 2026. Built alone.</p>
         <h3>Overtone Explorer</h3>
         <p>Fit one- and two-mode models to simulated noisy ringdowns, and see when a black hole’s overtone becomes detectable and what ignoring it does to the fit.</p>
         <a href="https://leonardoperugia09-cyber.github.io/overtone-explorer/">Open the tool</a>
       </article>
       <article class="proj">
-        <div class="shot cover" aria-hidden="true"><p>If someone strikes a bell, it rings.</p><p>Black holes ring too.</p></div>
+        <div class="obj" data-obj>
+          <div class="obj-inner">
+            <div class="obj-face front cover" aria-hidden="true"><p>If someone strikes a bell, it rings.</p><p>Black holes ring too.</p></div>
+            <div class="obj-face back">
+              <ul>
+                <li>Written for the Learn phase of TKS.</li>
+                <li>Four kinds of noise: random, environmental, foregrounds, systematic errors.</li>
+                <li>Figures made by me from published ringdown formulas.</li>
+              </ul>
+            </div>
+          </div>
+          <button type="button" class="obj-flip" aria-pressed="false">See details</button>
+        </div>
         <p class="k">Article, 4&nbsp;Oct&nbsp;2026. 12&nbsp;min read.</p>
         <h3>Listening Through the Noise</h3>
         <p>How four kinds of noise limit what we can learn from a ringing black hole, and why the next detectors are heading to space.</p>
         <a href="https://medium.com/@leonardo.perugia09/listening-through-the-noise-b33e21d0c97a">Read the article</a>
       </article>
       <article class="proj">
-        <img class="shot" src="assets/hsk-platform-screen.png" alt="HSK Platform home screen: one card per HSK level from 1 to 6 with word and character counts" width="1200" height="675" loading="lazy">
+        <div class="obj" data-obj>
+          <div class="obj-inner">
+            <div class="obj-face front"><img src="assets/hsk-platform-screen.png" alt="HSK Platform home screen: one card per HSK level from 1 to 6 with word and character counts" width="1200" height="675" loading="lazy"></div>
+            <div class="obj-face back">
+              <ul>
+                <li>About 4,500 words across HSK 1–6, each with an example sentence.</li>
+                <li>Spaced repetition, timed mock exams and an exam-date planner.</li>
+                <li>One page that works offline; progress stays in your browser.</li>
+              </ul>
+            </div>
+          </div>
+          <button type="button" class="obj-flip" aria-pressed="false">See details</button>
+        </div>
         <p class="k">Web app, 2026. Built alone.</p>
         <h3>HSK Platform</h3>
         <p>I couldn’t find a Chinese-learning app that suited how I study, so I built one: HSK 1–6, spaced repetition, mock exams and an exam-date planner.</p>
@@ -178,7 +219,7 @@
 </main>
 
 <footer class="wrap foot">
-  <p>© 2026 Leonardo Perugia. Behind my name: an illustrative time–frequency picture of a black-hole merger, drawn from the textbook chirp formula: the frequency rises as the two black holes spiral together, then the remnant rings at about 270&nbsp;Hz. The ringdown plot uses the 220 and 221 mode frequencies and damping times from Overtone Explorer’s default settings.</p>
+  <p>© 2026 Leonardo Perugia. The spacetime sheet is an illustration: a well for the black hole, and ripples that fade like a ringdown. The ringdown plot uses the 220 and 221 mode frequencies and damping times from Overtone Explorer’s default settings.</p>
 </footer>
 
 <script src="main.js"></script>
