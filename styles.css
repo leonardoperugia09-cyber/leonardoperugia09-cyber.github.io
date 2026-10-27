@@ -236,7 +236,8 @@ h3 { font-size: var(--step-2); font-weight: 500; line-height: 1.25; }
   .edu-cell, .edu-cell.major { grid-column: auto; padding: 18px 18px 20px; }
   .pill { padding-left: 6px; justify-content: center; }
   .mark { display: none; }
-  .top nav a { padding: 12px 12px; }
+  .top nav { gap: 0; }
+  .top nav a { padding: 16px 8px; font-size: 0.8125rem; }
   .tl-body { grid-template-columns: 44px 1fr; }
   .tl-svg { width: 44px; }
   .tl li { padding-left: 12px; }
@@ -271,4 +272,8 @@ h3 { font-size: var(--step-2); font-weight: 500; line-height: 1.25; }
 @media (prefers-reduced-motion: reduce) {
   .aurora::before, .aurora::after { animation: none; }
   .cursor { display: none; }
+}
+
+@media (max-width: 360px) {
+  .top nav a { padding-inline: 5px; }
 }
