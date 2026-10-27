@@ -36,8 +36,11 @@
 <main id="main">
 
   <section class="wrap hero" aria-labelledby="name">
-    <h1 id="name">Leonardo<br>Perugia</h1>
-    <p class="lede">I learn physics and mathematics by building things that test them. Most recently: a simulator for the second note of a ringing black hole.</p>
+    <div class="hero-head">
+      <canvas id="sky" aria-hidden="true"></canvas>
+      <h1 id="name">Leonardo<br>Perugia</h1>
+      <p class="lede">I learn physics and mathematics by building things that test them. Most recently: a simulator for the second note of a ringing black hole.</p>
+    </div>
     <figure class="plot">
       <canvas id="ring" role="img" aria-label="A ringing black hole: the full signal, and dashed underneath it a second note that fades about three times faster."></canvas>
       <figcaption>
@@ -167,7 +170,7 @@
 </main>
 
 <footer class="wrap foot">
-  <p>© 2026 Leonardo Perugia. The ringdown at the top uses the 220 and 221 mode frequencies and damping times from Overtone Explorer’s default settings.</p>
+  <p>© 2026 Leonardo Perugia. Behind my name: an illustrative time–frequency picture of a black-hole merger, drawn from the textbook chirp formula: the frequency rises as the two black holes spiral together, then the remnant rings at about 270&nbsp;Hz. The ringdown plot uses the 220 and 221 mode frequencies and damping times from Overtone Explorer’s default settings.</p>
 </footer>
 
 <script src="main.js"></script>

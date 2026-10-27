@@ -3,6 +3,72 @@ const css = name => getComputedStyle(document.documentElement).getPropertyValue(
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const NS = 'http://www.w3.org/2000/svg';
 
+/* Behind the name: an illustrative spectrogram of a whole merger.
+   Inspiral: f(t) = f_peak · ((t_c − t_peak) / (t_c − t))^(3/8), loudness ∝ f^(2/3).
+   After the peak the remnant rings at f_peak and fades. Drawn at low resolution
+   and scaled up so the band is soft, with a little detector-like speckle. */
+(() => {
+  const c = document.getElementById('sky'), ctx = c.getContext('2d');
+  const tPeak = 0.78, tc = tPeak + 0.008, fPeak = 270, fMin = 20, fMax = 2400;
+  const stops = [
+    [0.00, [11, 22, 48], 0],
+    [0.25, [167, 139, 250], 0.5],   // violet
+    [0.60, [45, 212, 191], 0.8],    // teal
+    [1.00, [253, 224, 71], 1]       // yellow
+  ];
+  const colour = v => {
+    v = clamp(v, 0, 1);
+    let i = 1; while (i < stops.length - 1 && v > stops[i][0]) i++;
+    const [a, ca, aa] = stops[i - 1], [b, cb, ab] = stops[i], k = (v - a) / (b - a);
+    return [0, 1, 2].map(j => ca[j] + (cb[j] - ca[j]) * k).concat(aa + (ab - aa) * k);
+  };
+
+  function draw() {
+    const W = c.clientWidth, H = c.clientHeight;
+    if (!W) return;
+    const dpr = devicePixelRatio || 1;
+    c.width = W * dpr; c.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const w = 360, h = Math.max(90, Math.round(w * H / W));
+    const off = document.createElement('canvas'); off.width = w; off.height = h;
+    const octx = off.getContext('2d'), img = octx.createImageData(w, h);
+    const yOf = f => h * (1 - Math.log(f / fMin) / Math.log(fMax / fMin));
+    let seed = 11;
+    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+    for (let x = 0; x < w; x++) {
+      const t = x / (w - 1);
+      let f, A;
+      if (t <= tPeak) { f = fPeak * Math.pow((tc - tPeak) / (tc - t), 3 / 8); A = Math.pow(f / fPeak, 2 / 3); }
+      else { f = fPeak; A = Math.exp(-(t - tPeak) / 0.045); }
+      const yc = yOf(f), sigma = 1.8 + 2.6 * Math.exp(-Math.abs(t - tPeak) / 0.03);
+      for (let y = 0; y < h; y++) {
+        const d = (y - yc) / sigma;
+        const v = A * (Math.exp(-d * d) + 0.22 * Math.exp(-d * d / 16)) + rand() * 0.07;
+        const [r, g, b, a] = colour(v), p = (y * w + x) * 4;
+        img.data[p] = r; img.data[p + 1] = g; img.data[p + 2] = b; img.data[p + 3] = a * 255 * 0.9;
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(off, 0, 0, W, H);
+
+    // the merger: a faint marker where the chirp peaks
+    const xm = tPeak * W, ym = yOf(fPeak) / h * H;
+    ctx.strokeStyle = 'rgba(154, 168, 199, 0.45)'; ctx.lineWidth = 1; ctx.setLineDash([3, 5]);
+    ctx.beginPath(); ctx.moveTo(xm, ym - 70); ctx.lineTo(xm, H - 12); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = css('--muted'); ctx.font = '500 12px "Public Sans", sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText('merger', xm + 6, ym - 58);
+  }
+
+  let raf = 0;
+  addEventListener('resize', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(draw); });
+  document.fonts.ready.then(draw);
+  draw();
+})();
+
 /* Hero: h(t) = e^{-t/τ220} cos(2π f220 t) + a e^{-t/τ221} cos(2π f221 t + φ)
    Frequencies and damping times match Overtone Explorer's default "truth" values.
    Pulling the signal sets its loudness; the detector noise stays fixed, so a louder
