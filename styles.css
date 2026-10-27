@@ -199,6 +199,12 @@ h3 { font-size: var(--step-2); font-weight: 500; line-height: 1.25; }
 /* contact */
 .contact { padding-block: 96px 88px; margin-bottom: 16px; }
 .contact-lede { max-width: 30em; font-size: var(--step-1); margin: 0 0 1rem; }
+.email-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin: 28px 0 0; }
+.email { font: 400 clamp(1.5rem, 4.4vw, 3rem)/1.2 var(--serif); color: var(--ink); text-decoration: underline; text-decoration-color: var(--signal); text-decoration-thickness: 2px; text-underline-offset: 6px; overflow-wrap: anywhere; }
+.email:hover { color: var(--signal); }
+.copy { min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--rule); background: none; color: var(--muted); font: 600 0.875rem/1 var(--sans); cursor: pointer; transition: color 150ms ease, border-color 150ms ease; }
+.copy:hover { color: var(--signal); border-color: var(--signal); }
+.copy.done { color: var(--signal); border-color: var(--signal); }
 .links { list-style: none; padding: 0; margin: 32px 0 0; display: flex; flex-wrap: wrap; gap: 12px; }
 .pill-link { display: inline-flex; align-items: center; min-height: 52px; padding: 0 28px; border-radius: 999px; border: 1px solid var(--rule); color: var(--ink); text-decoration: none; font: 800 1rem/1 var(--display); font-stretch: 112%; text-transform: uppercase; letter-spacing: 0.02em; transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease; }
 .pill-link:hover { background: var(--signal); border-color: var(--signal); color: var(--bg); }

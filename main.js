@@ -610,3 +610,18 @@ if (!reduce && 'IntersectionObserver' in window) {
   addEventListener('pointerup', () => ring.classList.remove('down'));
   document.documentElement.addEventListener('mouseleave', () => ring.classList.remove('on'));
 })();
+
+/* Email: assembled here rather than written plainly in the page, plus a copy button. */
+(() => {
+  const a = document.getElementById('email'), btn = document.getElementById('copy-email');
+  if (!a) return;
+  const addr = `${a.dataset.user}@${a.dataset.domain}`;
+  a.href = `mailto:${addr}`; a.textContent = addr;
+  if (!navigator.clipboard) return;
+  btn.hidden = false;
+  btn.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(addr); btn.textContent = 'Copied'; btn.classList.add('done'); }
+    catch (e) { btn.textContent = 'Press and hold the address to copy it'; }
+    setTimeout(() => { btn.textContent = 'Copy address'; btn.classList.remove('done'); }, 2200);
+  });
+})();
