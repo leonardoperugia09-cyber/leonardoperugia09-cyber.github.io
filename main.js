@@ -259,189 +259,119 @@ document.querySelectorAll('[data-diary]').forEach(diary => {
   sync();
 });
 
-/* Hero: a low-poly sheet of spacetime with a black hole sitting in a well.
-   Height = the well, −k/√(r² + s²), plus ripples that travel outward and fade like a ringdown.
-   The sheet leans toward the pointer; drag the black hole and let go to send a wave. */
-const spacetime = (() => {
-  const c = document.getElementById('spacetime');
-  if (!c) return { wave() {} };
-  const ctx = c.getContext('2d');
-  const NX = 44, NY = 30, SX = 1.7, SY = 1.1, P0 = 0.98, D = 3.4, YAW0 = -0.18;
-  const bh = { x: 0.25, y: 0.05 };
-  const unit = v => { const n = Math.hypot(...v); return v.map(a => a / n); };
-  const L = unit([-0.45, -0.55, 0.7]), HV = unit([-0.45, -1.1, 1.53]);   // light, and the half-vector towards the viewer
-  // a fixed field of stars behind the sheet; it drifts slightly as the sheet leans
-  let seed = 3;
-  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const STARS = Array.from({ length: 170 }, () => ({ x: rnd(), y: rnd() * 0.75, r: rnd() < 0.08 ? 1.6 : 0.4 + rnd() * 0.8, a: 0.25 + rnd() * 0.6 }));
-  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-  const BASE = [24, 28, 54];
-  let DEEP, WAVE, CREST2, waves = [], yaw = YAW0, pitch = 0, tyaw = YAW0, tpitch = 0;
-  let raf = 0, visible = true, drag = null, W = 0, H = 0, scale = 1;
+/* Hero: a black hole's horizon ringing in its 220 shape.
+   The surface is r = R (1 + ε s(t) (x² − y²)/r²), the real l = 2, m = 2 spherical harmonic,
+   where s(t) is the ringdown: the 220 mode plus the 221 overtone, which fades about three
+   times faster (the same ratio as Overtone Explorer's defaults), slowed down to be seen.
+   Drawn by ray-marching in a fragment shader; no libraries. Click or tap it to strike it again. */
+const horizon = (() => {
+  const c = document.getElementById('horizon');
+  if (!c) return { ring() {} };
+  const gl = c.getContext('webgl', { premultipliedAlpha: false, antialias: true });
+  if (!gl) { c.closest('.stage')?.classList.add('no-webgl'); return { ring() {} }; }
 
-  function field(x, y, now) {
-    const dx = x - bh.x, dy = y - bh.y;
-    let w = 0;
-    for (const v of waves) {
-      const t = (now - v.t0) / 1000, front = Math.hypot(x - v.x, y - v.y) - 0.85 * t;
-      w += v.A * Math.exp(-t / 1.2) * Math.exp(-front * front / 0.06) * Math.cos(10 * front);
-    }
-    return [-0.2 / Math.sqrt(dx * dx + dy * dy + 0.028) + 0.11 + w, w];
-  }
-  function project(x, y, z) {
-    const p = P0 + pitch, cy = Math.cos(yaw), sy = Math.sin(yaw);
-    const x1 = x * cy - y * sy, y1 = x * sy + y * cy;
-    const depth = y1 * Math.cos(p) - z * Math.sin(p), up = y1 * Math.sin(p) + z * Math.cos(p);
-    const s = D / (D + depth) * scale;
-    return [W / 2 + x1 * s, H * 0.46 - up * s, depth];
-  }
-
-  function draw(now) {
-    const pts = [];
-    for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
-      const x = (i / NX * 2 - 1) * SX, y = (j / NY * 2 - 1) * SY, [z, w] = field(x, y, now);
-      pts.push({ x, y, z, w, p: project(x, y, z) });
-    }
-    const at = (i, j) => pts[j * (NX + 1) + i], tris = [];
-    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
-      const a = at(i, j), b = at(i + 1, j), q = at(i + 1, j + 1), d = at(i, j + 1);
-      tris.push([a, b, q], [a, q, d]);
-    }
-    for (const t of tris) t.depth = (t[0].p[2] + t[1].p[2] + t[2].p[2]) / 3;
-    tris.sort((m, n) => n.depth - m.depth);
-
-    ctx.clearRect(0, 0, W, H);
-    for (const s of STARS) {
-      ctx.globalAlpha = s.a;
-      ctx.fillStyle = '#F2F4FA';
-      ctx.beginPath(); ctx.arc((s.x * W + yaw * 60 + W) % W, s.y * H + pitch * 40, s.r, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    ctx.lineWidth = 0.6; ctx.lineJoin = 'round';
-    for (const t of tris) {
-      const [a, b, d] = t;
-      // flat shading from the face normal gives the faceted, low-poly look; a specular term adds a sheen
-      const ux = b.x - a.x, uy = b.y - a.y, uz = b.z - a.z, vx = d.x - a.x, vy = d.y - a.y, vz = d.z - a.z;
-      let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-      if (nz < 0) { nx = -nx; ny = -ny; nz = -nz; }
-      const nl = Math.hypot(nx, ny, nz) || 1;
-      const lit = 0.34 + 0.85 * Math.max(0, (nx * L[0] + ny * L[1] + nz * L[2]) / nl);
-      const spec = Math.pow(Math.max(0, (nx * HV[0] + ny * HV[1] + nz * HV[2]) / nl), 28) * 120;
-      const deep = clamp(-(a.z + b.z + d.z) / 3 / 0.9, 0, 1), wv = (a.w + b.w + d.w) / 3, crest = clamp(Math.abs(wv) * 5, 0, 1);
-      const tint = wv >= 0 ? WAVE : CREST2;   // wave crests glow mint, troughs glow magenta
-      const col = BASE.map((v, k) => {
-        v += (DEEP[k] - v) * deep * deep;
-        v += (tint[k] - v) * crest * 0.85;
-        return Math.round(clamp(v * lit + spec, 0, 255));
-      });
-      ctx.globalAlpha = 1 - clamp((t.depth - 0.35) / 1.3, 0, 0.75);   // the far side fades into the night
-      ctx.beginPath(); ctx.moveTo(a.p[0], a.p[1]); ctx.lineTo(b.p[0], b.p[1]); ctx.lineTo(d.p[0], d.p[1]); ctx.closePath();
-      ctx.fillStyle = ctx.strokeStyle = `rgb(${col})`; ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = 'rgba(200, 210, 240, 0.08)'; ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-
-    // the black hole: a glow on the sheet, a glowing accretion disk, and the dark shadow in front of its back half
-    const [bx, by] = project(bh.x, bh.y, field(bh.x, bh.y, now)[0]);
-    const r = clamp(scale * 0.075, 8, 18);
-    const halo = ctx.createRadialGradient(bx, by, r, bx, by, r * 6);
-    halo.addColorStop(0, 'rgba(139, 124, 255, 0.35)'); halo.addColorStop(1, 'rgba(139, 124, 255, 0)');
-    ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(bx, by, r * 6, 0, Math.PI * 2); ctx.fill();
-
-    const disk = (from, to) => {
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      const g = ctx.createConicGradient ? ctx.createConicGradient(0, bx, by) : null;
-      if (g) {
-        g.addColorStop(0, css('--signal')); g.addColorStop(0.33, css('--second'));
-        g.addColorStop(0.66, css('--accent')); g.addColorStop(1, css('--signal'));
+  const VERT = 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }';
+  const FRAG = `
+    precision highp float;
+    uniform vec2 res; uniform float osc; uniform vec2 rot;
+    uniform vec3 cMint, cMag, cVio;
+    mat3 rx(float a){ float c=cos(a), s=sin(a); return mat3(1.,0.,0., 0.,c,-s, 0.,s,c); }
+    mat3 ry(float a){ float c=cos(a), s=sin(a); return mat3(c,0.,s, 0.,1.,0., -s,0.,c); }
+    float shape(vec3 p){ float r2 = dot(p,p) + 1e-4; return (p.x*p.x - p.y*p.y) / r2; }
+    float sdf(vec3 p){ return length(p) - 1.0 * (1.0 + 0.22 * osc * shape(p)); }
+    float hash(vec2 v){ return fract(sin(dot(v, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main(){
+      vec2 uv = (gl_FragCoord.xy - 0.5 * res) / res.y;
+      vec3 ro = vec3(0.0, 0.0, 5.0), rd = normalize(vec3(uv, -1.7));
+      mat3 m = ry(rot.x) * rx(rot.y);
+      ro = m * ro; rd = m * rd;
+      float t = 0.0, d = 1.0, glow = 0.0;
+      for (int i = 0; i < 110; i++) {
+        vec3 p = ro + rd * t; d = sdf(p);
+        glow += 0.012 / (0.04 + d * d * 6.0);
+        if (d < 0.001 || t > 9.0) break;
+        t += d * 0.7;
       }
-      for (const [w, a, blur] of [[r * 0.9, 0.35, 24], [r * 0.35, 0.95, 10]]) {
-        ctx.globalAlpha = a; ctx.shadowColor = css('--signal'); ctx.shadowBlur = blur;
-        ctx.strokeStyle = g || css('--signal'); ctx.lineWidth = w;
-        ctx.beginPath(); ctx.ellipse(bx, by, r * 2.1, r * 0.8, 0, from, to); ctx.stroke();
+      vec3 col = vec3(0.0); float a = 0.0;
+      float star = step(0.9975, hash(floor(gl_FragCoord.xy / 2.0))) * 0.7;
+      if (d < 0.004) {
+        vec3 p = ro + rd * t;
+        vec2 e = vec2(0.0015, 0.0);
+        vec3 n = normalize(vec3(sdf(p+e.xyy)-sdf(p-e.xyy), sdf(p+e.yxy)-sdf(p-e.yxy), sdf(p+e.yyx)-sdf(p-e.yyx)));
+        float fres = pow(1.0 - max(dot(n, -rd), 0.0), 2.6);
+        float k = osc * shape(p);                          // where the surface is pushed out or pulled in
+        vec3 rim = mix(cMag, cMint, smoothstep(-0.25, 0.25, k));
+        float lat = acos(clamp(normalize(p).z, -1.0, 1.0)), lon = atan(p.y, p.x);
+        float grid = max(smoothstep(0.86, 0.96, abs(fract(lat * 3.82) - 0.5) * 2.0),
+                         smoothstep(0.86, 0.96, abs(fract(lon * 1.91) - 0.5) * 2.0));
+        col = vec3(0.012, 0.014, 0.03) + rim * fres * 1.25 + rim * grid * 0.55 * (0.3 + fres);
+        a = 1.0;
+      } else {
+        vec3 halo = mix(cVio, cMint, 0.35 + 0.3 * osc);
+        col = halo * min(glow, 1.6) * 0.32 + vec3(star);
+        a = clamp(min(glow, 1.6) * 0.32 + star, 0.0, 1.0);
       }
-      ctx.restore();
-    };
-    disk(Math.PI, Math.PI * 2);                                  // back half, behind the hole
-    ctx.fillStyle = '#010104'; ctx.beginPath(); ctx.arc(bx, by - r * 0.2, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(60, 240, 197, 0.7)'; ctx.lineWidth = 1.2; ctx.stroke();   // photon ring
-    disk(0, Math.PI);                                            // front half, in front of the hole
-    return [bx, by];
-  }
+      gl_FragColor = vec4(col, a);
+    }`;
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+  const prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { c.closest('.stage')?.classList.add('no-webgl'); return { ring() {} }; }
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'p');
+  gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const U = name => gl.getUniformLocation(prog, name);
+  const uRes = U('res'), uOsc = U('osc'), uRot = U('rot');
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+  gl.uniform3fv(U('cMint'), rgb(css('--signal'))); gl.uniform3fv(U('cMag'), rgb(css('--second'))); gl.uniform3fv(U('cVio'), rgb(css('--accent')));
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-  function frame(now) {
-    raf = 0;
-    if (reduce) { draw(now); return; }
-    yaw += (tyaw - yaw) * 0.12; pitch += (tpitch - pitch) * 0.12;
-    waves = waves.filter(v => now - v.t0 < 5000);
-    draw(now);
-    const settling = Math.abs(tyaw - yaw) > 0.0008 || Math.abs(tpitch - pitch) > 0.0008;
-    if (visible && (waves.length || settling || drag)) raf = requestAnimationFrame(frame);
-  }
-  const kick = () => { if (!raf) raf = requestAnimationFrame(frame); };
+  // the ringdown, slowed down: 220 fundamental plus the 221 overtone (fades about 3× faster)
+  const TAU = 1.7, F = 0.95;
+  const s = t => Math.exp(-t / TAU) * Math.cos(2 * Math.PI * F * t) + 0.9 * Math.exp(-t / (TAU / 3)) * Math.cos(2 * Math.PI * 0.98 * F * t + 0.6);
+  let t0 = -1e9, strength = 1, yaw = 0.5, pitch = 0.35, tyaw = 0.5, tpitch = 0.35, raf = 0, visible = true;
 
   function size() {
-    W = c.clientWidth; H = c.clientHeight;
-    const dpr = devicePixelRatio || 1;
-    c.width = W * dpr; c.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    scale = Math.min(W / (2 * SX) * 0.86, H / 1.75);
-    DEEP = rgb(css('--accent')); WAVE = rgb(css('--signal')); CREST2 = rgb(css('--second'));
-    kick();
+    const dpr = Math.min(devicePixelRatio || 1, 1.5);
+    c.width = Math.round(c.clientWidth * dpr); c.height = Math.round(c.clientHeight * dpr);
+    gl.viewport(0, 0, c.width, c.height); gl.uniform2f(uRes, c.width, c.height);
   }
-
-  function wave(A) {
-    const now = performance.now();
-    if (reduce) { waves = [{ x: bh.x, y: bh.y, t0: now - 500, A }]; draw(now); return; }
-    waves.push({ x: bh.x, y: bh.y, t0: now, A }); kick();
+  function frame(now) {
+    raf = 0;
+    const t = (now - t0) / 1000;
+    const o = reduce ? 0.6 : strength * s(Math.max(t, 0));
+    yaw += (tyaw - yaw) * 0.08; pitch += (tpitch - pitch) * 0.08;
+    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform1f(uOsc, o); gl.uniform2f(uRot, yaw, pitch);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    const settling = Math.abs(tyaw - yaw) + Math.abs(tpitch - pitch) > 0.001;
+    if (!reduce && visible && (t < TAU * 6 || settling)) raf = requestAnimationFrame(frame);
   }
+  const kick = () => { if (!raf) raf = requestAnimationFrame(frame); };
+  function ring(k = 1) { t0 = performance.now(); strength = k; kick(); }
 
   const hero = c.closest('.hero');
   hero.addEventListener('pointermove', e => {
     if (reduce || e.pointerType === 'touch') return;
     const r = c.getBoundingClientRect();
-    tyaw = YAW0 + clamp((e.clientX - (r.left + r.width / 2)) / r.width, -1, 1) * 0.35;
-    tpitch = -clamp((e.clientY - (r.top + r.height / 2)) / r.height, -1, 1) * 0.12;
+    tyaw = 0.5 + clamp((e.clientX - (r.left + r.width / 2)) / r.width, -1, 1) * 0.7;
+    tpitch = 0.35 + clamp((e.clientY - (r.top + r.height / 2)) / r.height, -1, 1) * 0.4;
     kick();
   });
-  hero.addEventListener('pointerleave', () => { tyaw = YAW0; tpitch = 0; kick(); });
-
-  c.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'touch') return;          // touch: a tap makes a wave, swipes keep scrolling
-    const r = c.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
-    const [bx, by] = draw(performance.now());
-    if (Math.hypot(px - bx, py - by) < 46) {
-      drag = { px, py, x0: bh.x, y0: bh.y, moved: 0 };
-      c.setPointerCapture(e.pointerId); c.classList.add('dragging');
-    } else drag = { click: true };
-  });
-  c.addEventListener('pointermove', e => {
-    if (!drag || drag.click) return;
-    const r = c.getBoundingClientRect(), p = P0 + pitch;
-    const x1 = (e.clientX - r.left - drag.px) / scale, y1 = -(e.clientY - r.top - drag.py) / (scale * Math.sin(p));
-    const cy = Math.cos(yaw), sy = Math.sin(yaw);
-    bh.x = clamp(drag.x0 + x1 * cy + y1 * sy, -SX + 0.35, SX - 0.35);
-    bh.y = clamp(drag.y0 - x1 * sy + y1 * cy, -SY + 0.3, SY - 0.3);
-    drag.moved = Math.hypot(bh.x - drag.x0, bh.y - drag.y0);
-    kick();
-  });
-  const release = e => {
-    if (e.pointerType === 'touch') { if (e.type === 'pointerup') wave(0.28); return; }
-    if (!drag) return;
-    const d = drag; drag = null; c.classList.remove('dragging');
-    if (e.type === 'pointerup') wave(d.click ? 0.24 : clamp(0.14 + d.moved * 0.5, 0.14, 0.45));
-  };
-  c.addEventListener('pointerup', release);
-  c.addEventListener('pointercancel', release);
+  hero.addEventListener('pointerleave', () => { tyaw = 0.5; tpitch = 0.35; kick(); });
+  c.addEventListener('click', () => ring(1));
 
   new IntersectionObserver(([en]) => { visible = en.isIntersecting; if (visible) kick(); }).observe(c);
-  addEventListener('resize', size);
-  size();
-  // one ripple to show the sheet is alive: after the signature intro, or straight away
-  setTimeout(() => wave(0.3), document.documentElement.classList.contains('intro') ? 2400 : 500);
-  return { wave };
+  addEventListener('resize', () => { size(); kick(); });
+  size(); kick();
+  // one strike to show it is alive: after the signature intro, or straight away
+  setTimeout(() => ring(1), document.documentElement.classList.contains('intro') ? 2400 : 500);
+  return { ring };
 })();
-document.getElementById('wave')?.addEventListener('click', () => spacetime.wave(0.3));
+document.getElementById('ring-it')?.addEventListener('click', () => horizon.ring(1));
 
 /* Project objects: they lean toward the pointer with a soft sheen;
    drag one sideways (or press it, or the button) to flip it and read the back. */

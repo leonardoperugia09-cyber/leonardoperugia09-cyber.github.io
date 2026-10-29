@@ -64,8 +64,9 @@ h3 { font-size: var(--step-2); font-weight: 500; line-height: 1.25; }
 .stage figcaption { padding: 0 20px 4px; }
 .hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 24px 40px; align-items: center; }
 .sheet { margin: 0; }
-.sheet canvas { display: block; width: 100%; height: clamp(300px, 36vw, 460px); cursor: grab; touch-action: pan-y; }
-.sheet canvas.dragging { cursor: grabbing; }
+.sheet canvas { display: block; width: 100%; height: clamp(320px, 38vw, 480px); cursor: pointer; touch-action: pan-y; }
+.stage.no-webgl canvas { display: none; }
+.stage.no-webgl { min-height: 120px; }
 .sheet figcaption { display: flex; justify-content: space-between; align-items: center; gap: 8px 20px; flex-wrap: wrap; font-size: 0.875rem; color: var(--muted); }
 .sheet figcaption button, .plot-actions button { font: 600 0.875rem/1 var(--sans); color: var(--signal); background: none; border: 0; padding: 15px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; transition: color 150ms ease; }
 .sheet figcaption button:hover, .plot-actions button:hover { color: var(--accent); text-decoration-thickness: 2px; }
@@ -229,7 +230,7 @@ h3 { font-size: var(--step-2); font-weight: 500; line-height: 1.25; }
   .edu-cell, .edu-cell.major { grid-column: span 1; }
   .edu-cell.major, .edu-cell:last-child { grid-column: 1 / -1; }
   .hero-grid { grid-template-columns: 1fr; }
-  .sheet canvas { height: 300px; }
+  .sheet canvas { height: 320px; }
   .projects { grid-template-columns: 1fr; gap: 48px; }
   .proj.lead { display: flex; }
   .proj.lead > .obj { margin-bottom: 18px; }
