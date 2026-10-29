@@ -275,6 +275,9 @@ document.querySelectorAll('[data-flow]').forEach(flow => {
     if (Math.abs(dx) > 40) { swiped = true; go(active + (dx < 0 ? 1 : -1)); }
   });
   items.forEach((f, i) => f.addEventListener('click', () => { if (!swiped) go(i === active ? active + 1 : i); }));
+  // albums start open; the summary reads "Hide photos" or "Show photos"
+  const box = flow.closest('details'), label = box?.querySelector('summary');
+  box?.addEventListener('toggle', () => { label.textContent = box.open ? 'Hide photos' : 'Show photos'; });
   layout();
 });
 
