@@ -386,8 +386,8 @@ const horizon = (() => {
   new IntersectionObserver(([en]) => { visible = en.isIntersecting; if (visible) kick(); }).observe(c);
   addEventListener('resize', () => { size(); kick(); });
   size(); kick();
-  // one strike to show it is alive: after the signature intro, or straight away
-  setTimeout(() => ring(1), document.documentElement.classList.contains('intro') ? 2400 : 500);
+  // one strike to show it is alive (with the curtain up, it rings as the curtain opens instead)
+  if (!document.documentElement.classList.contains('intro')) setTimeout(() => ring(1), 500);
   return { ring };
 })();
 document.getElementById('ring-it')?.addEventListener('click', () => horizon.ring(1));
@@ -433,16 +433,49 @@ document.querySelectorAll('[data-obj]').forEach(obj => {
   inner.addEventListener('pointercancel', end);
 });
 
-/* Signature intro: the name is written in one glowing line, then the page appears.
-   Once per visit; any click or key skips it. */
+/* Curtain: red velvet over the page until "Get to know me" is pressed. Each fold slides towards
+   its edge on its own path, with a soft wave running along the hem, then the gathered drapes slide
+   away and the horizon rings. Once per visit; never with reduced motion. */
 (() => {
-  const sig = document.getElementById('sig');
-  if (!sig) return;
-  if (!document.documentElement.classList.contains('intro')) { sig.remove(); return; }
-  const skip = () => { if (!sig.isConnected) return; sig.classList.add('done'); setTimeout(() => sig.remove(), 320); };
-  sig.addEventListener('click', skip);
-  addEventListener('keydown', skip, { once: true });
-  sig.addEventListener('animationend', e => { if (e.target === sig) sig.remove(); });
+  const cur = document.getElementById('curtain');
+  if (!cur) return;
+  const root = document.documentElement;
+  if (!root.classList.contains('intro')) { cur.remove(); return; }
+  const behind = [...document.body.children].filter(el => el !== cur && el.tagName !== 'SCRIPT');
+  behind.forEach(el => { el.inert = true; });
+  const go = cur.querySelector('.curtain-go');
+  go.focus({ preventScroll: true });
+  const ease = p => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+  const STEPS = 48, DUR = 2600;
+  go.addEventListener('click', () => {
+    try { sessionStorage.setItem('intro', '1'); } catch (e) {}
+    cur.classList.add('opening');
+    const anims = [];
+    cur.querySelectorAll('.half').forEach(half => {
+      const left = half.classList.contains('l'), s = left ? -1 : 1, W = half.offsetWidth;
+      const folds = [...half.children].filter(f => f.offsetWidth);
+      const n = folds.length, fw = W / n;
+      folds.forEach((f, idx) => {
+        const j = left ? idx : n - 1 - idx;                   // 0 is the fold at the outer edge
+        const frames = [];
+        for (let k = 0; k <= STEPS; k++) {
+          const p = k / STEPS;
+          const gather = ease(Math.min(p / 0.62, 1)), away = ease(Math.max((p - 0.5) / 0.5, 0));
+          const swell = Math.sin(Math.PI * p);                // the wave grows, then settles
+          const wave = Math.sin(2 * Math.PI * 2.2 * p - j * 0.8);
+          const x = s * (j * fw * 0.74 * gather + away * (W * 0.32 + fw));
+          frames.push({ transform: `translate(${x.toFixed(1)}px, ${(2.5 * swell * (wave + 1)).toFixed(1)}px) skewY(${(2.6 * swell * wave).toFixed(2)}deg) scaleX(${(1 - 0.5 * gather).toFixed(3)})` });
+        }
+        anims.push(f.animate(frames, { duration: DUR, delay: (n - 1 - j) * 18, easing: 'linear', fill: 'forwards' }));
+      });
+    });
+    setTimeout(() => horizon.ring(1), DUR * 0.55);
+    Promise.all(anims.map(a => a.finished)).then(() => {
+      cur.remove();
+      root.classList.remove('intro');
+      behind.forEach(el => { el.inert = false; });
+    });
+  }, { once: true });
 })();
 
 /* Section titles: scrambled characters that decode, left to right, the first time a title scrolls into view. */

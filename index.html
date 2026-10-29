@@ -7,11 +7,10 @@
 <title>Leonardo Perugia</title>
 <meta name="description" content="Leonardo Perugia: a student learning physics and mathematics by building things that test them. Projects, writing and a timeline.">
 <script>
-  // Intro plays once per visit, never with reduced motion; without JS the page is simply visible.
+  // The curtain shows until it is opened once in this visit, never with reduced motion; without JS the page is simply visible.
   try {
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches && !sessionStorage.getItem('intro')) {
       document.documentElement.classList.add('intro');
-      sessionStorage.setItem('intro', '1');
     }
   } catch (e) {}
 </script>
@@ -22,8 +21,13 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="sig" id="sig" aria-hidden="true">
-  <svg viewBox="0 0 900 240"><text x="450" y="150" text-anchor="middle">Leonardo Perugia</text></svg>
+<div class="curtain" id="curtain">
+  <div class="half l"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="half r"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="curtain-front">
+    <svg viewBox="0 0 900 240" role="img" aria-label="Leonardo Perugia"><defs><linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF0B8"/><stop offset=".55" stop-color="#E8BD55"/><stop offset="1" stop-color="#A87A22"/></linearGradient></defs><text x="450" y="150" text-anchor="middle">Leonardo Perugia</text></svg>
+    <button type="button" class="curtain-go">Get to know me</button>
+  </div>
 </div>
 <div class="aurora" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
@@ -347,7 +351,7 @@
             <div class="flow night" data-flow role="region" aria-roledescription="photo album" aria-label="Photos from La Plagne" tabindex="0">
               <figure><img src="assets/la-plagne/chairlift.jpg" alt="An empty chairlift crossing green summer slopes under towering white clouds" width="750" height="1000" loading="lazy"><figcaption>Chairlift in summer</figcaption></figure>
               <figure><img src="assets/la-plagne/valley.jpg" alt="A grassy ridge and a chairlift, looking down a valley towards cloud-covered mountains" width="750" height="1000" loading="lazy"><figcaption>Down the valley</figcaption></figure>
-              <figure><img src="assets/la-plagne/peak.jpg" alt="A snowy peak rising above a band of cloud, with a pine forest in front" width="750" height="1000" loading="lazy"><figcaption>A peak above the clouds</figcaption></figure>
+              <figure><img src="assets/la-plagne/peak.jpg" alt="Mont Blanc rising snow-capped above a band of cloud, with a pine forest in front" width="750" height="1000" loading="lazy"><figcaption>Mont Blanc above the clouds</figcaption></figure>
               <figure><img src="assets/la-plagne/pasture.jpg" alt="A green alpine pasture with grazing cows and a winding track, surrounded by pine forest at dusk" width="750" height="1000" loading="lazy"><figcaption>Alpine pasture at dusk</figcaption></figure>
             </div>
           </details>
