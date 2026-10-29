@@ -100,6 +100,31 @@ h3 { font-size: var(--step-2); font-weight: 500; line-height: 1.25; }
 
 /* who I am */
 .about { padding-block: 104px 96px; }
+/* behind the name: equations from my own work, drifting slightly with the pointer */
+.hero-text { position: relative; isolation: isolate; }
+.equations { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.equations span { position: absolute; left: var(--x); top: var(--y); white-space: nowrap; font: italic 400 calc(1.05rem * var(--s)) / 1 var(--serif); color: var(--ink); opacity: 0.16; transform: translate3d(calc(var(--px, 0) * var(--d) * 14px), calc(var(--py, 0) * var(--d) * 10px), 0); transition: transform 600ms var(--ease-out); animation: float calc(7s + var(--d) * 4s) ease-in-out infinite alternate; }
+.equations span.m { color: var(--signal); opacity: 0.3; }
+.equations span.g { color: var(--second); opacity: 0.26; font-style: normal; }
+.equations sup, .equations sub { font-size: 0.65em; }
+@keyframes float { to { translate: 0 calc(-8px * var(--d)); } }
+.eq-art { position: absolute; fill: none; stroke: var(--signal); stroke-width: 1.5; opacity: 0.2; overflow: visible; transform: translate3d(calc(var(--px, 0) * var(--d) * 14px), calc(var(--py, 0) * var(--d) * 10px), 0); transition: transform 600ms var(--ease-out); }
+.eq-art.wave { left: -4%; top: 52%; width: 108%; height: 70px; stroke-dasharray: 6 10; animation: flow 14s linear infinite; }
+.eq-art.wave path { vector-effect: non-scaling-stroke; }
+.eq-art.orbit { left: 72%; top: -34%; width: 210px; height: 210px; stroke: var(--accent); opacity: 0.28; }
+.eq-art.orbit circle { fill: var(--second); stroke: none; }
+.eq-art.orbit .moon { fill: var(--signal); }
+@keyframes flow { to { stroke-dashoffset: -320; } }
+@media (max-width: 860px) { .equations span { left: min(var(--x), 58%); } }
+@media (max-width: 600px) { .eq-art.orbit { left: auto; right: 0; width: 140px; height: 140px; } .equations span:nth-child(n+7) { display: none; } .equations span { font-size: calc(0.9rem * var(--s)); left: min(var(--x), 52%); } }
+@media (prefers-reduced-motion: reduce) { .equations span, .eq-art, .eq-art.wave { animation: none; transition: none; } }
+.about-top { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: 32px 64px; align-items: center; }
+.me { margin: 0; }
+.me .obj { margin: 0; }
+.me .obj-inner { aspect-ratio: 1 / 1; }
+.avatar-face { background: var(--bg-2); }
+.avatar-face canvas { display: block; width: 100%; height: 100%; }
+.photo-face img { object-position: 50% 30%; }
 .statement { margin: 0; max-width: 30em; font: 400 clamp(1.5rem, 2.8vw, 2.2rem)/1.32 var(--serif); letter-spacing: -0.01em; }
 .statement em { font-style: italic; color: var(--signal); }
 .numbers-h { margin: 88px 0 20px; font: 700 0.875rem/1 var(--sans); color: var(--muted); }
@@ -226,6 +251,8 @@ h3 { font-size: var(--step-2); font-weight: 500; line-height: 1.25; }
 @keyframes sig-out { to { opacity: 0; visibility: hidden; } }
 
 @media (max-width: 860px) {
+  .about-top { grid-template-columns: 1fr; }
+  .me { max-width: 420px; }
   .edu-grid { grid-template-columns: 1fr 1fr; }
   .edu-cell, .edu-cell.major { grid-column: span 1; }
   .edu-cell.major, .edu-cell:last-child { grid-column: 1 / -1; }

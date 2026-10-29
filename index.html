@@ -48,6 +48,26 @@
   <section class="wrap hero" aria-labelledby="name">
     <div class="hero-grid">
       <div class="hero-text">
+        <div class="equations" aria-hidden="true">
+          <span style="--x:44%; --y:-6%; --s:1.05; --d:.6">h(t) = A e<sup>−t/τ</sup> cos(2πft + φ)</span>
+          <span style="--x:-2%; --y:-12%; --s:.95; --d:.9" class="m">f<sub>220</sub> ≈ 271 Hz</span>
+          <span style="--x:78%; --y:20%; --s:1.5; --d:1.2">∇ · v = 0</span>
+          <span style="--x:64%; --y:58%; --s:1.6; --d:.4" class="g">学而时习之</span>
+          <span style="--x:76%; --y:72%; --s:1.15; --d:1">T = 2π√(L/g)</span>
+          <span style="--x:34%; --y:93%; --s:1; --d:.7">ρ Dv/Dt = −∇p + μ∇²v + f</span>
+          <span style="--x:-4%; --y:78%; --s:.95; --d:1.3" class="m">τ<sub>221</sub> ≈ τ<sub>220</sub> / 3</span>
+          <span style="--x:92%; --y:86%; --s:1; --d:.8">Re = ρvd/μ</span>
+          <span style="--x:58%; --y:-18%; --s:1.1; --d:1.1" class="m">r<sub>s</sub> = 2GM/c²</span>
+          <span style="--x:88%; --y:2%; --s:.95; --d:.5">|G| = [G : H] · |H|</span>
+          <span style="--x:-6%; --y:32%; --s:1.05; --d:1.4">q̇ = ∂H/∂p,&nbsp; ṗ = −∂H/∂q</span>
+          <span style="--x:56%; --y:44%; --s:1; --d:.9" class="g">x<sub>n+1</sub> = r x<sub>n</sub>(1 − x<sub>n</sub>)</span>
+          <span style="--x:46%; --y:79%; --s:.95; --d:.6">p + ½ρv² + ρgh = const</span>
+          <span style="--x:20%; --y:-24%; --s:.9; --d:1.2">Δχ² = χ²<sub>1</sub> − χ²<sub>2</sub></span>
+          <span style="--x:6%; --y:106%; --s:1.05; --d:.8">G<sub>μν</sub> + Λg<sub>μν</sub> = (8πG/c⁴) T<sub>μν</sub></span>
+          <span style="--x:84%; --y:104%; --s:1; --d:1">A₁v₁ = A₂v₂</span>
+          <svg class="eq-art wave" viewBox="0 0 600 80" preserveAspectRatio="none" style="--d:.5"><path d="M0 40 C 30 -20, 45 100, 75 40 S 120 -5, 150 40 S 190 70, 215 40 S 250 22, 275 40 S 310 50, 330 40 S 360 35, 385 40 S 430 43, 470 40 L 600 40"/></svg>
+          <svg class="eq-art orbit" viewBox="0 0 200 200" style="--d:1.3"><ellipse cx="100" cy="100" rx="92" ry="34" transform="rotate(-18 100 100)"/><ellipse cx="100" cy="100" rx="62" ry="22" transform="rotate(-18 100 100)"/><circle cx="100" cy="100" r="6"/><circle class="moon" cx="185" cy="72" r="3.5"/></svg>
+        </div>
         <h1 id="name"><span class="first">Leonardo</span> <span class="last">Perugia</span></h1>
         <p class="role">Student, Rome and Shanghai. TKS Innovator 2026–27.</p>
         <figure class="motto">
@@ -192,7 +212,22 @@
 
   <section class="wrap about" id="about" aria-labelledby="about-h">
     <h2 id="about-h" data-scramble>Who I am</h2>
-    <p class="statement">I’m Leonardo, a student from Rome, spending a semester in Shanghai. I learn physics and maths <em>by building things that test them</em>: a black-hole ringdown simulator, an article on detector noise, a Chinese-learning app. I learn by doing, and <em>I finish what I start</em>.</p>
+    <div class="about-top">
+      <p class="statement">I’m Leonardo, a student from Rome, spending a semester in Shanghai. I learn physics and maths <em>by building things that test them</em>: a black-hole ringdown simulator, an article on detector noise, a Chinese-learning app. I learn by doing, and <em>I finish what I start</em>.</p>
+      <figure class="me">
+        <div class="obj" data-obj>
+          <div class="obj-inner">
+            <div class="obj-face front avatar-face">
+              <canvas id="avatar" role="img" aria-label="A low-poly 3D avatar of Leonardo: blond curly hair, blue eyes, a light-blue linen shirt. It turns to look at the pointer."></canvas>
+            </div>
+            <div class="obj-face back photo-face">
+              <img src="assets/leonardo-profile.jpg" alt="Leonardo, curly-haired and in a black T-shirt, at an outdoor café on a lively street at night" width="600" height="600" loading="lazy">
+            </div>
+          </div>
+          <button type="button" class="obj-flip" aria-pressed="false" data-front="See the real me" data-back="Back to the 3D me">See the real me</button>
+        </div>
+      </figure>
+    </div>
 
     <h3 class="numbers-h">In numbers</h3>
     <dl class="numbers">

@@ -382,7 +382,7 @@ document.querySelectorAll('[data-obj]').forEach(obj => {
   const apply = (extra = 0) => { inner.style.transform = `rotateX(${rx}deg) rotateY(${(flipped ? 180 : 0) + ry + extra}deg)`; };
   const setFlip = v => {
     flipped = v; rx = ry = 0;
-    btn.setAttribute('aria-pressed', v); btn.textContent = v ? 'Back to the front' : 'See details';
+    btn.setAttribute('aria-pressed', v); btn.textContent = v ? (btn.dataset.back || 'Back to the front') : (btn.dataset.front || 'See details');
     inner.classList.remove('live'); apply();
   };
   btn.addEventListener('click', () => setFlip(!flipped));
@@ -553,5 +553,146 @@ if (!reduce && 'IntersectionObserver' in window) {
     try { await navigator.clipboard.writeText(addr); btn.textContent = 'Copied'; btn.classList.add('done'); }
     catch (e) { btn.textContent = 'Press and hold the address to copy it'; }
     setTimeout(() => { btn.textContent = 'Copy address'; btn.classList.remove('done'); }, 2200);
+  });
+})();
+
+/* Avatar: a low-poly 3D Leonardo (blond curls, blue eyes, light-blue linen shirt) that turns to
+   look at the pointer and blinks. three.js is loaded only when the card comes near the screen.
+   If 3D can't run, the card simply shows the photo side. */
+(() => {
+  const canvas = document.getElementById('avatar');
+  if (!canvas) return;
+  const card = canvas.closest('[data-obj]');
+  const showPhoto = () => card?.querySelector('.obj-flip')?.click();
+  const THREE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+
+  const load = () => new Promise((ok, fail) => {
+    if (window.THREE) return ok();
+    const s = document.createElement('script');
+    s.src = THREE_URL; s.async = true; s.onload = ok; s.onerror = fail;
+    document.head.append(s);
+  });
+
+  function build() {
+    const T = window.THREE;
+    let renderer;
+    try { renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: true }); }
+    catch (e) { showPhoto(); return; }
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+    const scene = new T.Scene();
+    const camera = new T.PerspectiveCamera(30, 1, 0.1, 50);
+    camera.position.set(0, 0.45, 9.4); camera.lookAt(0, 0.45, 0);
+
+    scene.add(new T.HemisphereLight(0xe6ecff, 0x1a1030, 0.55));
+    const fill = new T.DirectionalLight(0xfff4ea, 0.55); fill.position.set(0, -0.8, 6); scene.add(fill);
+    const key = new T.DirectionalLight(0xffffff, 0.7); key.position.set(2.5, 3, 4); scene.add(key);
+    const rimA = new T.PointLight(0x3cf0c5, 1.4, 12); rimA.position.set(-3.2, 1.4, -1.5); scene.add(rimA);
+    const rimB = new T.PointLight(0xff4fd8, 1.1, 12); rimB.position.set(3.2, 0.6, -1.5); scene.add(rimB);
+
+    const mat = c => new T.MeshStandardMaterial({ color: c, flatShading: true, roughness: 0.85, metalness: 0 });
+    const SKIN = mat(0xe9b995), SKIN2 = mat(0xdba483), WHITE = mat(0xf4f4f2), IRIS = mat(0x3b7fd8),
+      PUPIL = mat(0x0d0f18), BROW = mat(0xb48a4c), LIP = mat(0xb9675e), SHIRT = mat(0x7f9cba), SHIRT2 = mat(0x6d89a6);
+    const mesh = (g, m, x = 0, y = 0, z = 0) => { const o = new T.Mesh(g, m); o.position.set(x, y, z); return o; };
+
+    // body: neck and shirt, with a soft V collar
+    const body = new T.Group(); scene.add(body);
+    body.add(mesh(new T.CylinderGeometry(0.3, 0.34, 0.55, 8), SKIN2, 0, -0.05, 0));
+    const torso = mesh(new T.CylinderGeometry(1.0, 1.4, 1.7, 10), SHIRT, 0, -1.05, 0); body.add(torso);
+    const shoulders = mesh(new T.SphereGeometry(1.05, 10, 6), SHIRT, 0, -0.42, 0); shoulders.scale.set(1.25, 0.42, 0.78); body.add(shoulders);
+    [-1, 1].forEach(side => {
+      const col = mesh(new T.BoxGeometry(0.42, 0.1, 0.5), SHIRT2, side * 0.2, -0.26, 0.42);
+      col.rotation.set(0.3, side * -0.5, side * 0.55); body.add(col);
+    });
+    body.add(mesh(new T.BoxGeometry(0.05, 1.3, 0.05), SHIRT2, 0, -1.0, 0.86));
+
+    // head on a pivot at the neck, so it turns naturally
+    const head = new T.Group(); head.position.y = 0.2; scene.add(head);
+    const skull = mesh(new T.IcosahedronGeometry(1, 1), SKIN, 0, 0.95, 0); skull.scale.set(0.9, 1.08, 0.96); head.add(skull);
+    [-1, 1].forEach(side => {
+      const ear = mesh(new T.SphereGeometry(0.17, 6, 5), SKIN2, side * 0.9, 0.9, -0.02); ear.scale.set(0.55, 1, 0.8); head.add(ear);
+    });
+    const nose = mesh(new T.ConeGeometry(0.11, 0.3, 5), SKIN2, 0, 0.82, 1.0); nose.rotation.x = Math.PI / 2; head.add(nose);
+    const mouth = mesh(new T.TorusGeometry(0.15, 0.03, 4, 10, Math.PI), LIP, 0, 0.52, 0.9); mouth.rotation.z = Math.PI; head.add(mouth);
+
+    const eyes = [], irises = [];
+    [-1, 1].forEach(side => {
+      const g = new T.Group(); g.position.set(side * 0.31, 1.04, 0.82);
+      g.add(mesh(new T.SphereGeometry(0.13, 10, 8), WHITE));
+      const iris = new T.Group();
+      iris.add(mesh(new T.SphereGeometry(0.075, 10, 8), IRIS, 0, 0, 0.085));
+      iris.add(mesh(new T.SphereGeometry(0.036, 8, 6), PUPIL, 0, 0, 0.14));
+      g.add(iris); head.add(g); eyes.push(g); irises.push(iris);
+      const brow = mesh(new T.BoxGeometry(0.28, 0.055, 0.06), BROW, side * 0.31, 1.27, 0.88);
+      brow.rotation.z = side * -0.12; head.add(brow);
+    });
+
+    // blond curls: many small faceted lumps over the top and back of the head, fullest on top
+    let seed = 9;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const blonds = [0xe2bf72, 0xd6ae5f, 0xc99d50, 0xebcd85].map(c => mat(c));
+    for (let i = 0; i < 260; i++) {
+      const u = rnd() * 2 - 1, th = rnd() * Math.PI * 2;
+      const r = Math.sqrt(1 - u * u);
+      const d = new T.Vector3(r * Math.cos(th), u, r * Math.sin(th));
+      if (d.y < 0.05) continue;                                   // nothing below the ears
+      if (d.z > 0.45 && d.y < 0.62) continue;                     // keep the forehead clear
+      const lift = 1.02 + 0.16 * d.y;                             // more volume on top
+      const size = 0.13 + rnd() * 0.1;
+      const curl = mesh(new T.IcosahedronGeometry(size, 0), blonds[i % blonds.length],
+        d.x * 0.92 * lift, 0.95 + d.y * 1.08 * lift + 0.05, d.z * 0.98 * lift - 0.04);
+      curl.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3);
+      head.add(curl);
+    }
+
+    function size() {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+
+    let tx = 0, ty = 0, yaw = 0, pitch = 0, visible = true, raf = 0, nextBlink = performance.now() + 2500;
+    addEventListener('pointermove', e => {
+      if (reduce || e.pointerType === 'touch') return;
+      const r = canvas.getBoundingClientRect();
+      tx = clamp((e.clientX - (r.left + r.width / 2)) / (innerWidth / 2), -1, 1);
+      ty = clamp((e.clientY - (r.top + r.height / 2)) / (innerHeight / 2), -1, 1);
+    }, { passive: true });
+
+    function frame(now) {
+      raf = 0;
+      yaw += (tx * 0.55 - yaw) * 0.08; pitch += (ty * 0.3 - pitch) * 0.08;
+      head.rotation.set(pitch, yaw, -yaw * 0.08);
+      irises.forEach(i => { i.position.x = tx * 0.025; i.position.y = -ty * 0.02; });
+      if (!reduce) {
+        torso.scale.y = 1 + Math.sin(now / 900) * 0.008;            // breathing
+        let open = 1;
+        if (now > nextBlink) { const k = (now - nextBlink) / 140; open = k < 1 ? Math.abs(1 - 2 * k) : 1; if (k >= 1) nextBlink = now + 2600 + rnd() * 2600; }
+        eyes.forEach(g => { g.scale.y = Math.max(open, 0.08); });
+      }
+      renderer.render(scene, camera);
+      if (!reduce && visible) raf = requestAnimationFrame(frame);
+    }
+    new IntersectionObserver(([en]) => { visible = en.isIntersecting; if (visible && !raf) raf = requestAnimationFrame(frame); }).observe(canvas);
+    addEventListener('resize', () => { size(); if (!raf) raf = requestAnimationFrame(frame); });
+    size(); raf = requestAnimationFrame(frame);
+  }
+
+  // load the 3D library only when the card is about to be seen
+  const io = new IntersectionObserver(([en]) => {
+    if (!en.isIntersecting) return;
+    io.disconnect();
+    load().then(build, showPhoto);
+  }, { rootMargin: '400px 0px' });
+  io.observe(canvas);
+})();
+
+/* Equations behind the name lean slightly with the pointer, at different depths. */
+(() => {
+  const eq = document.querySelector('.equations');
+  if (!eq || reduce) return;
+  eq.closest('.hero').addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return;
+    eq.style.setProperty('--px', ((e.clientX / innerWidth) * 2 - 1).toFixed(3));
+    eq.style.setProperty('--py', ((e.clientY / innerHeight) * 2 - 1).toFixed(3));
   });
 })();
