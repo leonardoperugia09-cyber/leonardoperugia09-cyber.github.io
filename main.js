@@ -231,32 +231,51 @@ const NS = 'http://www.w3.org/2000/svg';
   document.fonts.ready.then(build);
 })();
 
-/* Photo diary: a swipeable strip with previous/next buttons and a counter. */
-document.querySelectorAll('[data-diary]').forEach(diary => {
-  const track = diary.querySelector('.diary-track'), items = [...track.children];
+/* Photo albums: a 3D coverflow. The photo in the middle faces you; click a side photo to bring
+   it round, click the middle one (or swipe, or use the arrows) for the next. */
+document.querySelectorAll('[data-flow]').forEach(flow => {
+  const items = [...flow.querySelectorAll('figure')], n = items.length;
   const icon = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+  const stage = document.createElement('div');
+  stage.className = 'flow-stage'; stage.append(...items);
   const nav = document.createElement('div');
-  nav.className = 'diary-nav';
+  nav.className = 'flow-nav';
   nav.innerHTML = `<button type="button" aria-label="Previous photo">${icon('M15 18l-6-6 6-6')}</button>`
-    + `<span class="diary-count"></span>`
+    + `<p class="flow-cap" aria-live="polite"></p>`
     + `<button type="button" aria-label="Next photo">${icon('M9 18l6-6-6-6')}</button>`;
-  diary.append(nav);
-  const [prev, count, next] = nav.children;
-  const step = () => items[0].getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 12);
-  const index = () => Math.round(track.scrollLeft / step());
-  const sync = () => {
-    const i = clamp(index(), 0, items.length - 1);
-    count.textContent = `${i + 1} / ${items.length}`;
-    prev.disabled = track.scrollLeft < 4;
-    next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
-  };
-  const go = dir => track.scrollBy({ left: dir * step(), behavior: reduce ? 'auto' : 'smooth' });
-  prev.addEventListener('click', () => go(-1));
-  next.addEventListener('click', () => go(1));
-  let t = false;
-  track.addEventListener('scroll', () => { if (!t) { t = true; requestAnimationFrame(() => { t = false; sync(); }); } }, { passive: true });
-  diary.closest('details')?.addEventListener('toggle', sync);
-  sync();
+  flow.append(stage, nav);
+  const [prev, cap, next] = nav.children;
+  const angle = 50, gap = 46;
+  let active = 0;
+  function layout() {
+    items.forEach((f, i) => {
+      let d = (i - active + n) % n; if (d > n / 2) d -= n;
+      const a = Math.abs(d);
+      f.style.transform = `translateX(-50%) translateX(${d * gap}%) translateZ(${-a * 140}px) rotateY(${-Math.sign(d) * angle}deg)`;
+      f.style.opacity = a > 2 ? 0 : 1;
+      f.style.filter = a ? `brightness(${1 - a * 0.25})` : 'none';
+      f.style.zIndex = n - a;
+      f.classList.toggle('on', !a);
+      f.setAttribute('aria-hidden', a ? 'true' : 'false');
+    });
+    cap.innerHTML = items[active].querySelector('figcaption').textContent + `<span>${active + 1} / ${n}</span>`;
+  }
+  const go = i => { active = (i + n) % n; layout(); };
+  prev.addEventListener('click', () => go(active - 1));
+  next.addEventListener('click', () => go(active + 1));
+  flow.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); go(active + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); go(active - 1); }
+  });
+  let x0 = null, swiped = false;
+  stage.addEventListener('pointerdown', e => { x0 = e.clientX; swiped = false; });
+  stage.addEventListener('pointerup', e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0; x0 = null;
+    if (Math.abs(dx) > 40) { swiped = true; go(active + (dx < 0 ? 1 : -1)); }
+  });
+  items.forEach((f, i) => f.addEventListener('click', () => { if (!swiped) go(i === active ? active + 1 : i); }));
+  layout();
 });
 
 /* Hero: a black hole's horizon ringing in its 220 shape.
@@ -556,16 +575,16 @@ if (!reduce && 'IntersectionObserver' in window) {
   });
 })();
 
-/* Avatar: a low-poly 3D Leonardo (blond curls, blue eyes, light-blue linen shirt) that turns to
-   look at the pointer and blinks. three.js is loaded only when the card comes near the screen.
-   If 3D can't run, the card simply shows the photo side. */
+/* Avatar: a smooth 3D Leonardo (blond curls, blue eyes, light-blue linen shirt) with arms.
+   He turns his head and eyes to follow the pointer, sways gently, blinks, and waves hello
+   when the card first appears and whenever the pointer comes onto the card.
+   three.js is loaded only when the card comes near the screen; without 3D the card shows the photo. */
 (() => {
   const canvas = document.getElementById('avatar');
   if (!canvas) return;
   const card = canvas.closest('[data-obj]');
   const showPhoto = () => card?.querySelector('.obj-flip')?.click();
   const THREE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-
   const load = () => new Promise((ok, fail) => {
     if (window.THREE) return ok();
     const s = document.createElement('script');
@@ -578,69 +597,93 @@ if (!reduce && 'IntersectionObserver' in window) {
     let renderer;
     try { renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: true }); }
     catch (e) { showPhoto(); return; }
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
     const scene = new T.Scene();
-    const camera = new T.PerspectiveCamera(30, 1, 0.1, 50);
-    camera.position.set(0, 0.45, 9.4); camera.lookAt(0, 0.45, 0);
+    const camera = new T.PerspectiveCamera(28, 1, 0.1, 60);
+    camera.position.set(0, -0.1, 13.2); camera.lookAt(0, -0.25, 0);
 
-    scene.add(new T.HemisphereLight(0xe6ecff, 0x1a1030, 0.55));
-    const fill = new T.DirectionalLight(0xfff4ea, 0.55); fill.position.set(0, -0.8, 6); scene.add(fill);
-    const key = new T.DirectionalLight(0xffffff, 0.7); key.position.set(2.5, 3, 4); scene.add(key);
-    const rimA = new T.PointLight(0x3cf0c5, 1.4, 12); rimA.position.set(-3.2, 1.4, -1.5); scene.add(rimA);
-    const rimB = new T.PointLight(0xff4fd8, 1.1, 12); rimB.position.set(3.2, 0.6, -1.5); scene.add(rimB);
+    scene.add(new T.HemisphereLight(0xe8eeff, 0x241a3a, 0.5));
+    const key = new T.DirectionalLight(0xfff6ec, 0.7); key.position.set(2.5, 3.5, 5); scene.add(key);
+    const fill = new T.DirectionalLight(0xdfe7ff, 0.35); fill.position.set(-3, -0.5, 4); scene.add(fill);
+    const rimA = new T.PointLight(0x3cf0c5, 1.6, 14); rimA.position.set(-3.6, 1.6, -2); scene.add(rimA);
+    const rimB = new T.PointLight(0xff4fd8, 1.3, 14); rimB.position.set(3.6, 0.4, -2); scene.add(rimB);
 
-    const mat = c => new T.MeshStandardMaterial({ color: c, flatShading: true, roughness: 0.85, metalness: 0 });
-    const SKIN = mat(0xe9b995), SKIN2 = mat(0xdba483), WHITE = mat(0xf4f4f2), IRIS = mat(0x3b7fd8),
-      PUPIL = mat(0x0d0f18), BROW = mat(0xb48a4c), LIP = mat(0xb9675e), SHIRT = mat(0x7f9cba), SHIRT2 = mat(0x6d89a6);
+    const mat = (c, rough = 0.62) => new T.MeshStandardMaterial({ color: c, roughness: rough, metalness: 0 });
+    const SKIN = mat(0xeec3a2, 0.55), SKIN2 = mat(0xe2ad8c, 0.6), WHITE = mat(0xf6f6f4, 0.3), IRIS = mat(0x2f78d6, 0.25),
+      PUPIL = mat(0x0c0e16, 0.2), BROW = mat(0xb38545), LIP = mat(0xc4726a, 0.5), SHIRT = mat(0x7a9cc0, 0.8), SHIRT2 = mat(0x67869f, 0.8);
     const mesh = (g, m, x = 0, y = 0, z = 0) => { const o = new T.Mesh(g, m); o.position.set(x, y, z); return o; };
+    const sphere = (r, m, x, y, z, sx = 1, sy = 1, sz = 1) => { const o = mesh(new T.SphereGeometry(r, 32, 24), m, x, y, z); o.scale.set(sx, sy, sz); return o; };
 
-    // body: neck and shirt, with a soft V collar
-    const body = new T.Group(); scene.add(body);
-    body.add(mesh(new T.CylinderGeometry(0.3, 0.34, 0.55, 8), SKIN2, 0, -0.05, 0));
-    const torso = mesh(new T.CylinderGeometry(1.0, 1.4, 1.7, 10), SHIRT, 0, -1.05, 0); body.add(torso);
-    const shoulders = mesh(new T.SphereGeometry(1.05, 10, 6), SHIRT, 0, -0.42, 0); shoulders.scale.set(1.25, 0.42, 0.78); body.add(shoulders);
-    [-1, 1].forEach(side => {
-      const col = mesh(new T.BoxGeometry(0.42, 0.1, 0.5), SHIRT2, side * 0.2, -0.26, 0.42);
-      col.rotation.set(0.3, side * -0.5, side * 0.55); body.add(col);
-    });
-    body.add(mesh(new T.BoxGeometry(0.05, 1.3, 0.05), SHIRT2, 0, -1.0, 0.86));
+    const rig = new T.Group(); rig.position.y = -0.3; scene.add(rig);
 
-    // head on a pivot at the neck, so it turns naturally
-    const head = new T.Group(); head.position.y = 0.2; scene.add(head);
-    const skull = mesh(new T.IcosahedronGeometry(1, 1), SKIN, 0, 0.95, 0); skull.scale.set(0.9, 1.08, 0.96); head.add(skull);
+    // body: a rounded torso in the linen shirt, a V neckline and a button placket
+    const body = new T.Group(); rig.add(body);
+    const torsoGeo = new T.LatheGeometry([
+      new T.Vector2(0.0, -2.6), new T.Vector2(1.22, -2.6), new T.Vector2(1.28, -1.9), new T.Vector2(1.24, -1.1),
+      new T.Vector2(1.2, -0.55), new T.Vector2(1.02, -0.18), new T.Vector2(0.55, 0.02), new T.Vector2(0.0, 0.06)
+    ], 40);
+    const torso = mesh(torsoGeo, SHIRT); torso.scale.z = 0.66; body.add(torso);
+    body.add(mesh(new T.CylinderGeometry(0.3, 0.34, 0.55, 24), SKIN2, 0, 0.2, 0));
+    const vneck = mesh(new T.ConeGeometry(0.26, 0.55, 3), SKIN2, 0, -0.12, 0.7); vneck.rotation.set(-0.35, 0, Math.PI); vneck.scale.z = 0.25; body.add(vneck);
     [-1, 1].forEach(side => {
-      const ear = mesh(new T.SphereGeometry(0.17, 6, 5), SKIN2, side * 0.9, 0.9, -0.02); ear.scale.set(0.55, 1, 0.8); head.add(ear);
+      const col = mesh(new T.BoxGeometry(0.5, 0.09, 0.42), SHIRT2, side * 0.26, -0.04, 0.5);
+      col.rotation.set(0.45, side * -0.55, side * 0.6); body.add(col);
     });
-    const nose = mesh(new T.ConeGeometry(0.11, 0.3, 5), SKIN2, 0, 0.82, 1.0); nose.rotation.x = Math.PI / 2; head.add(nose);
-    const mouth = mesh(new T.TorusGeometry(0.15, 0.03, 4, 10, Math.PI), LIP, 0, 0.52, 0.9); mouth.rotation.z = Math.PI; head.add(mouth);
+    body.add(mesh(new T.CylinderGeometry(0.025, 0.025, 2.2, 8), SHIRT2, 0, -1.5, 0.84));
+
+    // arms: shoulder and elbow joints so they can hang naturally and wave
+    const arms = [-1, 1].map(side => {
+      const shoulder = new T.Group(); shoulder.position.set(side * 1.12, -0.32, 0); body.add(shoulder);
+      shoulder.add(sphere(0.32, SHIRT, 0, 0, 0));
+      const upper = mesh(new T.CylinderGeometry(0.27, 0.23, 1.15, 24), SHIRT, 0, -0.6, 0); shoulder.add(upper);
+      const elbow = new T.Group(); elbow.position.y = -1.18; shoulder.add(elbow);
+      elbow.add(sphere(0.23, SHIRT, 0, 0, 0));
+      elbow.add(mesh(new T.CylinderGeometry(0.23, 0.2, 1.0, 24), SHIRT, 0, -0.5, 0));
+      elbow.add(mesh(new T.CylinderGeometry(0.205, 0.205, 0.12, 24), SHIRT2, 0, -0.98, 0));   // cuff
+      const wrist = new T.Group(); wrist.position.y = -1.08; elbow.add(wrist);
+      wrist.add(sphere(0.21, SKIN, 0, -0.16, 0.02, 0.9, 1.15, 0.6));                        // hand
+      wrist.add(sphere(0.08, SKIN, side * -0.17, -0.08, 0.08, 1, 1.6, 1));                  // thumb
+      shoulder.rotation.z = side * 0.14; elbow.rotation.x = -0.12;
+      return { side, shoulder, elbow, wrist };
+    });
+
+    // head on a neck pivot, smooth and slightly narrower at the jaw
+    const head = new T.Group(); head.position.y = 0.42; rig.add(head);
+    head.add(sphere(1, SKIN, 0, 0.95, 0, 0.9, 1.06, 0.95));
+    head.add(sphere(0.72, SKIN, 0, 0.5, 0.12, 0.98, 0.72, 0.95));                             // jaw and chin
+    [-1, 1].forEach(side => head.add(sphere(0.16, SKIN2, side * 0.9, 0.9, -0.02, 0.5, 1, 0.75)));
+    head.add(sphere(0.12, SKIN2, 0, 0.84, 0.95, 0.85, 1.25, 1.1));                           // nose
+    const mouth = mesh(new T.TorusGeometry(0.15, 0.028, 10, 24, Math.PI), LIP, 0, 0.5, 0.88); mouth.rotation.z = Math.PI; head.add(mouth);
+    [-1, 1].forEach(side => head.add(sphere(0.12, SKIN, side * 0.42, 0.62, 0.74, 1, 0.8, 0.6)));   // cheeks
 
     const eyes = [], irises = [];
     [-1, 1].forEach(side => {
-      const g = new T.Group(); g.position.set(side * 0.31, 1.04, 0.82);
-      g.add(mesh(new T.SphereGeometry(0.13, 10, 8), WHITE));
+      const g = new T.Group(); g.position.set(side * 0.31, 1.03, 0.8);
+      g.add(sphere(0.135, WHITE, 0, 0, 0));
       const iris = new T.Group();
-      iris.add(mesh(new T.SphereGeometry(0.075, 10, 8), IRIS, 0, 0, 0.085));
-      iris.add(mesh(new T.SphereGeometry(0.036, 8, 6), PUPIL, 0, 0, 0.14));
+      iris.add(sphere(0.088, IRIS, 0, 0, 0.085, 1, 1, 0.5));
+      iris.add(sphere(0.038, PUPIL, 0, 0, 0.12, 1, 1, 0.4));
+      iris.add(sphere(0.016, WHITE, 0.025, 0.03, 0.135));                                   // catch-light
       g.add(iris); head.add(g); eyes.push(g); irises.push(iris);
-      const brow = mesh(new T.BoxGeometry(0.28, 0.055, 0.06), BROW, side * 0.31, 1.27, 0.88);
-      brow.rotation.z = side * -0.12; head.add(brow);
+      const brow = mesh(new T.CylinderGeometry(0.035, 0.035, 0.3, 10), BROW, side * 0.31, 1.26, 0.86);
+      brow.rotation.z = Math.PI / 2 + side * 0.12; head.add(brow);
     });
 
-    // blond curls: many small faceted lumps over the top and back of the head, fullest on top
+    // blond curls: a cap that closes the gaps, then many soft curls, fullest on top
+    head.add(sphere(0.97, mat(0xc9a052, 0.8), 0, 1.12, -0.12, 0.92, 1.0, 0.95));
     let seed = 9;
     const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    const blonds = [0xe2bf72, 0xd6ae5f, 0xc99d50, 0xebcd85].map(c => mat(c));
-    for (let i = 0; i < 260; i++) {
-      const u = rnd() * 2 - 1, th = rnd() * Math.PI * 2;
-      const r = Math.sqrt(1 - u * u);
+    const blonds = [0xe3c172, 0xd8b162, 0xcb9f51, 0xedcf88].map(c => mat(c, 0.7));
+    const curlGeo = new T.SphereGeometry(1, 14, 10);
+    for (let i = 0; i < 460; i++) {
+      const u = rnd() * 2 - 1, th = rnd() * Math.PI * 2, r = Math.sqrt(1 - u * u);
       const d = new T.Vector3(r * Math.cos(th), u, r * Math.sin(th));
-      if (d.y < 0.05) continue;                                   // nothing below the ears
-      if (d.z > 0.45 && d.y < 0.62) continue;                     // keep the forehead clear
-      const lift = 1.02 + 0.16 * d.y;                             // more volume on top
-      const size = 0.13 + rnd() * 0.1;
-      const curl = mesh(new T.IcosahedronGeometry(size, 0), blonds[i % blonds.length],
-        d.x * 0.92 * lift, 0.95 + d.y * 1.08 * lift + 0.05, d.z * 0.98 * lift - 0.04);
-      curl.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3);
+      if (d.y < -0.05 || (d.y < 0.25 && d.z > -0.1)) continue;   // sides and back only below the crown
+      if (d.z > 0.4 && d.y < 0.62) continue;                        // keep the forehead clear
+      const lift = 1.02 + 0.2 * d.y * d.y;                         // more volume on top
+      const s = 0.085 + rnd() * 0.075;
+      const curl = mesh(curlGeo, blonds[i % blonds.length], d.x * 0.93 * lift, 0.98 + d.y * 1.08 * lift, d.z * 0.98 * lift - 0.05);
+      curl.scale.set(s, s * (0.8 + rnd() * 0.4), s);
       head.add(curl);
     }
 
@@ -650,7 +693,13 @@ if (!reduce && 'IntersectionObserver' in window) {
       renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
     }
 
-    let tx = 0, ty = 0, yaw = 0, pitch = 0, visible = true, raf = 0, nextBlink = performance.now() + 2500;
+    // waving: the right arm lifts, the forearm swings three times, then everything settles back
+    let waveStart = -1e9;
+    const WAVE = 2200;
+    const wave = () => { if (!reduce && performance.now() - waveStart > WAVE) waveStart = performance.now(); };
+    card?.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch') wave(); });
+
+    let tx = 0, ty = 0, yaw = 0, pitch = 0, visible = true, raf = 0, nextBlink = performance.now() + 2500, waved = false;
     addEventListener('pointermove', e => {
       if (reduce || e.pointerType === 'touch') return;
       const r = canvas.getBoundingClientRect();
@@ -658,26 +707,49 @@ if (!reduce && 'IntersectionObserver' in window) {
       ty = clamp((e.clientY - (r.top + r.height / 2)) / (innerHeight / 2), -1, 1);
     }, { passive: true });
 
+    const ease = x => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
     function frame(now) {
       raf = 0;
-      yaw += (tx * 0.55 - yaw) * 0.08; pitch += (ty * 0.3 - pitch) * 0.08;
+      yaw += (tx * 0.55 - yaw) * 0.07; pitch += (ty * 0.28 - pitch) * 0.07;
       head.rotation.set(pitch, yaw, -yaw * 0.08);
-      irises.forEach(i => { i.position.x = tx * 0.025; i.position.y = -ty * 0.02; });
+      body.rotation.y = yaw * 0.25;
+      irises.forEach(i => { i.position.x = tx * 0.028; i.position.y = -ty * 0.022; });
+
       if (!reduce) {
-        torso.scale.y = 1 + Math.sin(now / 900) * 0.008;            // breathing
+        const t = now / 1000;
+        rig.rotation.z = Math.sin(t * 0.8) * 0.015;                            // gentle sway
+        torso.scale.y = 1 + Math.sin(t * 1.4) * 0.006;                         // breathing
+        arms[0].shoulder.rotation.z = -0.14 - Math.sin(t * 0.8) * 0.02;
+        // the wave
+        const k = (now - waveStart) / WAVE;
+        const right = arms[1];
+        if (k >= 0 && k <= 1) {
+          const up = k < 0.2 ? ease(k / 0.2) : k > 0.8 ? ease((1 - k) / 0.2) : 1;
+          right.shoulder.rotation.z = 0.14 + up * 2.55;
+          right.shoulder.rotation.x = -up * 0.25;
+          right.elbow.rotation.z = up * (0.35 + Math.sin(k * Math.PI * 6) * 0.45);
+          right.elbow.rotation.x = -0.12 * (1 - up);
+          right.wrist.rotation.z = up * Math.sin(k * Math.PI * 6 + 0.6) * 0.3;
+        } else {
+          right.shoulder.rotation.z = 0.14 + Math.sin(t * 0.8) * 0.02;
+          right.shoulder.rotation.x = 0; right.elbow.rotation.z = 0; right.elbow.rotation.x = -0.12; right.wrist.rotation.z = 0;
+        }
         let open = 1;
-        if (now > nextBlink) { const k = (now - nextBlink) / 140; open = k < 1 ? Math.abs(1 - 2 * k) : 1; if (k >= 1) nextBlink = now + 2600 + rnd() * 2600; }
+        if (now > nextBlink) { const b = (now - nextBlink) / 150; open = b < 1 ? Math.abs(1 - 2 * b) : 1; if (b >= 1) nextBlink = now + 2600 + rnd() * 2600; }
         eyes.forEach(g => { g.scale.y = Math.max(open, 0.08); });
       }
       renderer.render(scene, camera);
       if (!reduce && visible) raf = requestAnimationFrame(frame);
     }
-    new IntersectionObserver(([en]) => { visible = en.isIntersecting; if (visible && !raf) raf = requestAnimationFrame(frame); }).observe(canvas);
+    new IntersectionObserver(([en]) => {
+      visible = en.isIntersecting;
+      if (visible && !waved) { waved = true; setTimeout(wave, 400); }        // say hello the first time he is seen
+      if (visible && !raf) raf = requestAnimationFrame(frame);
+    }, { threshold: 0.4 }).observe(canvas);
     addEventListener('resize', () => { size(); if (!raf) raf = requestAnimationFrame(frame); });
     size(); raf = requestAnimationFrame(frame);
   }
 
-  // load the 3D library only when the card is about to be seen
   const io = new IntersectionObserver(([en]) => {
     if (!en.isIntersecting) return;
     io.disconnect();

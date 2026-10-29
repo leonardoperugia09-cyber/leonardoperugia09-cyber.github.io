@@ -58,13 +58,19 @@
           <span style="--x:-4%; --y:78%; --s:.95; --d:1.3" class="m">τ<sub>221</sub> ≈ τ<sub>220</sub> / 3</span>
           <span style="--x:92%; --y:86%; --s:1; --d:.8">Re = ρvd/μ</span>
           <span style="--x:58%; --y:-18%; --s:1.1; --d:1.1" class="m">r<sub>s</sub> = 2GM/c²</span>
-          <span style="--x:88%; --y:2%; --s:.95; --d:.5">|G| = [G : H] · |H|</span>
+          <span style="--x:74%; --y:4%; --s:.95; --d:.5">|G| = [G : H] · |H|</span>
           <span style="--x:-6%; --y:32%; --s:1.05; --d:1.4">q̇ = ∂H/∂p,&nbsp; ṗ = −∂H/∂q</span>
           <span style="--x:56%; --y:44%; --s:1; --d:.9" class="g">x<sub>n+1</sub> = r x<sub>n</sub>(1 − x<sub>n</sub>)</span>
           <span style="--x:46%; --y:79%; --s:.95; --d:.6">p + ½ρv² + ρgh = const</span>
           <span style="--x:20%; --y:-24%; --s:.9; --d:1.2">Δχ² = χ²<sub>1</sub> − χ²<sub>2</sub></span>
           <span style="--x:6%; --y:106%; --s:1.05; --d:.8">G<sub>μν</sub> + Λg<sub>μν</sub> = (8πG/c⁴) T<sub>μν</sub></span>
           <span style="--x:84%; --y:104%; --s:1; --d:1">A₁v₁ = A₂v₂</span>
+          <span style="--x:28%; --y:118%; --s:1; --d:.9" class="m">SNR² = 4∫ |h̃(f)|² / Sₙ(f) df</span>
+          <span style="--x:94%; --y:40%; --s:1.1; --d:.7">Q = πfτ</span>
+          <span style="--x:-8%; --y:122%; --s:.95; --d:1.1">x(t) = A₀ e<sup>−γt</sup> cos ωt</span>
+          <span style="--x:66%; --y:116%; --s:1; --d:.6">s = ½ g t²</span>
+          <span style="--x:36%; --y:-32%; --s:.95; --d:1.3" class="m">χ = cJ / GM²</span>
+          <span style="--x:2%; --y:-30%; --s:.9; --d:.5">z = (p / 2π) · t</span>
           <svg class="eq-art wave" viewBox="0 0 600 80" preserveAspectRatio="none" style="--d:.5"><path d="M0 40 C 30 -20, 45 100, 75 40 S 120 -5, 150 40 S 190 70, 215 40 S 250 22, 275 40 S 310 50, 330 40 S 360 35, 385 40 S 430 43, 470 40 L 600 40"/></svg>
           <svg class="eq-art orbit" viewBox="0 0 200 200" style="--d:1.3"><ellipse cx="100" cy="100" rx="92" ry="34" transform="rotate(-18 100 100)"/><ellipse cx="100" cy="100" rx="62" ry="22" transform="rotate(-18 100 100)"/><circle cx="100" cy="100" r="6"/><circle class="moon" cx="185" cy="72" r="3.5"/></svg>
         </div>
@@ -218,7 +224,7 @@
         <div class="obj" data-obj>
           <div class="obj-inner">
             <div class="obj-face front avatar-face">
-              <canvas id="avatar" role="img" aria-label="A low-poly 3D avatar of Leonardo: blond curly hair, blue eyes, a light-blue linen shirt. It turns to look at the pointer."></canvas>
+              <canvas id="avatar" role="img" aria-label="A 3D avatar of Leonardo: blond curly hair, blue eyes, a light-blue linen shirt. He turns to look at the pointer and waves hello."></canvas>
             </div>
             <div class="obj-face back photo-face">
               <img src="assets/leonardo-profile.jpg" alt="Leonardo, curly-haired and in a black T-shirt, at an outdoor café on a lively street at night" width="600" height="600" loading="lazy">
@@ -257,7 +263,17 @@
           <p class="when">Sep 2026 – Jan 2027 <span class="st">Ongoing</span></p>
           <h3>A semester at Shanghai No.&nbsp;2 High School</h3>
           <p>School in another country and another system, while keeping my own projects going.</p>
-          <!-- Photo strip comes back when photos exist: see drafts/index-with-placeholders.html -->
+          <details>
+            <summary>Photos</summary>
+            <div class="flow night" data-flow role="region" aria-roledescription="photo album" aria-label="Photos from Shanghai" tabindex="0">
+              <figure><img src="assets/shanghai/bund-night.jpg" alt="The Pudong skyline lit up at night, with the Oriental Pearl Tower glowing pink" width="750" height="1000" loading="lazy"><figcaption>Pudong at night</figcaption></figure>
+              <figure><img src="assets/shanghai/qibao.jpg" alt="The stone gate of Qibao Old Street with two red lanterns and a pagoda behind" width="750" height="1000" loading="lazy"><figcaption>Qibao Old Street</figcaption></figure>
+              <figure><img src="assets/shanghai/the-louis.jpg" alt="The Louis, a building shaped like a silver ship, under a blue sky" width="750" height="1000" loading="lazy"><figcaption>The Louis, a building shaped like a ship</figcaption></figure>
+              <figure><img src="assets/shanghai/visionary-journeys.jpg" alt="The Louis Vuitton Visionary Journeys exhibition sign" width="750" height="1000" loading="lazy"><figcaption>Visionary Journeys exhibition</figcaption></figure>
+              <figure><img src="assets/shanghai/pearl-tower.jpg" alt="The Oriental Pearl Tower at sunset, framed by a tree and a shopping centre" width="750" height="1000" loading="lazy"><figcaption>The Oriental Pearl Tower</figcaption></figure>
+              <figure><img src="assets/shanghai/yu-garden.jpg" alt="A pavilion with upturned roofs over a koi pond in Yu Garden" width="750" height="1000" loading="lazy"><figcaption>Yu Garden</figcaption></figure>
+            </div>
+          </details>
         </li>
         <li class="ongoing">
           <p class="when">Sep 2026 – now <span class="st">Ongoing</span></p>
@@ -271,6 +287,17 @@
           <details>
             <summary>More</summary>
             <p>Oscillations, experiments and Python simulations. Our three experiments tested whether mass affects a pendulum’s period, measured <i>g</i> two independent ways, and found the damping coefficient from video analysis. Tempy is an intelligent thermal necklace.</p>
+          </details>
+          <details>
+            <summary>Photos</summary>
+            <div class="flow night" data-flow role="region" aria-roledescription="photo album" aria-label="Photos from London" tabindex="0">
+              <figure><img src="assets/london/westminster.jpg" alt="The Houses of Parliament and Big Ben beside the Thames and Westminster Bridge, seen from high above under grey clouds" width="750" height="1000" loading="lazy"><figcaption>Westminster from the London Eye</figcaption></figure>
+              <figure><img src="assets/london/london-eye.jpg" alt="The London Eye across the Thames under a bright blue sky" width="750" height="1000" loading="lazy"><figcaption>The London Eye</figcaption></figure>
+              <figure><img src="assets/london/big-ben.jpg" alt="Big Ben’s clock tower under a cloudy sky" width="750" height="1000" loading="lazy"><figcaption>Big Ben</figcaption></figure>
+              <figure><img src="assets/london/lyceum.jpg" alt="The columns of the Lyceum Theatre, hung with The Lion King banners" width="750" height="1000" loading="lazy"><figcaption>The Lion King at the Lyceum</figcaption></figure>
+              <figure><img src="assets/london/st-pauls.jpg" alt="The dome and white stone side of St Paul’s Cathedral behind trees" width="750" height="1000" loading="lazy"><figcaption>St Paul’s Cathedral</figcaption></figure>
+              <figure><img src="assets/london/harrods.jpg" alt="The red terracotta corner of Harrods under a stormy sky" width="750" height="1000" loading="lazy"><figcaption>Harrods</figcaption></figure>
+            </div>
           </details>
         </li>
         <li>
@@ -296,6 +323,16 @@
             <summary>More</summary>
             <p>Logic, proof and group theory in the first week; dynamics, chaos and Hamiltonian mechanics in the second.</p>
           </details>
+          <details>
+            <summary>Photos</summary>
+            <div class="flow night" data-flow role="region" aria-roledescription="photo album" aria-label="Photos from Cambridge" tabindex="0">
+              <figure><img src="assets/cambridge/st-catharines.jpg" alt="The red-brick Main Court of St Catharine’s College, with a lawn and a cobbled path" width="750" height="1000" loading="lazy"><figcaption>St Catharine’s, Main Court</figcaption></figure>
+              <figure><img src="assets/cambridge/queens-garden.jpg" alt="A garden lawn by the river at Queens’ College, with the wooden Mathematical Bridge" width="750" height="1000" loading="lazy"><figcaption>Queens’ and the Mathematical Bridge</figcaption></figure>
+              <figure><img src="assets/cambridge/mathematical-bridge.jpg" alt="The wooden Mathematical Bridge seen from below, from a punt on the river" width="750" height="1000" loading="lazy"><figcaption>Under the bridge, by punt</figcaption></figure>
+              <figure><img src="assets/cambridge/great-st-marys.jpg" alt="The stone tower of Great St Mary’s church against a blue sky" width="750" height="1000" loading="lazy"><figcaption>Great St Mary’s</figcaption></figure>
+              <figure><img src="assets/cambridge/caius.jpg" alt="The ornate stone gate tower of Gonville and Caius College" width="750" height="1000" loading="lazy"><figcaption>Gonville and Caius</figcaption></figure>
+            </div>
+          </details>
         </li>
         <li>
           <p class="when">2024 – Feb 2025</p>
@@ -305,6 +342,15 @@
         <li>
           <p class="when">Jul 2024</p>
           <h3>Summer sports course, La Plagne, French Alps</h3>
+          <details>
+            <summary>Photos</summary>
+            <div class="flow night" data-flow role="region" aria-roledescription="photo album" aria-label="Photos from La Plagne" tabindex="0">
+              <figure><img src="assets/la-plagne/chairlift.jpg" alt="An empty chairlift crossing green summer slopes under towering white clouds" width="750" height="1000" loading="lazy"><figcaption>Chairlift in summer</figcaption></figure>
+              <figure><img src="assets/la-plagne/valley.jpg" alt="A grassy ridge and a chairlift, looking down a valley towards cloud-covered mountains" width="750" height="1000" loading="lazy"><figcaption>Down the valley</figcaption></figure>
+              <figure><img src="assets/la-plagne/peak.jpg" alt="A snowy peak rising above a band of cloud, with a pine forest in front" width="750" height="1000" loading="lazy"><figcaption>A peak above the clouds</figcaption></figure>
+              <figure><img src="assets/la-plagne/pasture.jpg" alt="A green alpine pasture with grazing cows and a winding track, surrounded by pine forest at dusk" width="750" height="1000" loading="lazy"><figcaption>Alpine pasture at dusk</figcaption></figure>
+            </div>
+          </details>
         </li>
         <li>
           <p class="when">2019 – 2024</p>

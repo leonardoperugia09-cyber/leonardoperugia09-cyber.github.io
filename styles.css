@@ -207,20 +207,22 @@ h3 { font-size: var(--step-2); font-weight: 500; line-height: 1.25; }
 @keyframes ripple { from { transform: scale(1); opacity: 0.9; } to { transform: scale(3.4); opacity: 0; } }
 @keyframes open { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 
-/* photo diary: a swipeable strip (used when photos are added) */
-.diary { margin-top: 8px; }
-.diary-track { display: grid; grid-auto-flow: column; grid-auto-columns: min(78%, 300px); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; padding-bottom: 4px; }
-.diary-track::-webkit-scrollbar { display: none; }
-.diary-item { margin: 0; scroll-snap-align: start; }
-.diary-item img { aspect-ratio: 4 / 3; width: 100%; height: auto; object-fit: cover; border-radius: 12px; }
-.diary-item figcaption:empty { display: none; }
-.diary-item figcaption { font-size: 0.8125rem; color: var(--muted); margin-top: 6px; }
-.diary-nav { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
-.diary-nav button { width: 44px; height: 44px; display: grid; place-items: center; background: none; border: 0; color: var(--ink); cursor: pointer; border-radius: 50%; transition: color 150ms ease, background-color 150ms ease; }
-.diary-nav button:hover:not(:disabled) { color: var(--signal); background: var(--bg-2); }
-.diary-nav button:disabled { color: var(--rule); cursor: default; }
-.diary-nav svg { width: 18px; height: 18px; }
-.diary-count { font-size: 0.8125rem; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 3.5em; text-align: center; }
+/* photo albums: a 3D coverflow with glowing photos and reflections */
+.flow { --w: min(200px, 46vw); margin-top: 12px; border-radius: 16px; }
+.flow:focus-visible { outline: 2px solid var(--signal); outline-offset: 4px; }
+.flow-stage { position: relative; height: calc(var(--w) * 4 / 3 + 64px); perspective: 1000px; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.flow figure { position: absolute; left: 50%; top: 12px; width: var(--w); margin: 0; cursor: pointer; transition: transform 620ms var(--ease-out), opacity 300ms ease, filter 400ms ease; will-change: transform; }
+.flow img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; pointer-events: none; }
+.flow.night img { border-radius: 12px; -webkit-box-reflect: below 6px linear-gradient(transparent 72%, rgb(255 255 255 / 0.18)); transition: box-shadow 400ms ease; }
+.flow.night figure.on img { box-shadow: 0 0 0 1px rgb(60 240 197 / 0.55), 0 18px 50px -12px rgb(60 240 197 / 0.4), 0 0 70px -24px rgb(255 79 216 / 0.6); }
+.flow.night figcaption { display: none; }
+.flow-nav { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.flow-nav button { width: 44px; height: 44px; display: grid; place-items: center; background: none; border: 0; color: var(--ink); cursor: pointer; border-radius: 50%; transition: color 150ms ease, background-color 150ms ease; }
+.flow-nav button:hover { color: var(--signal); background: var(--bg-2); }
+.flow-nav svg { width: 18px; height: 18px; }
+.flow-cap { flex: 1; margin: 0; text-align: center; font: italic 400 1rem / 1.25 var(--serif); color: var(--ink); }
+.flow-cap span { display: block; font: 500 0.75rem / 1.4 var(--body); color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .flow figure { transition: opacity 200ms ease; } }
 
 /* contact */
 .contact { padding-block: 96px 88px; margin-bottom: 16px; }
